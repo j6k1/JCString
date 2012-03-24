@@ -7884,6 +7884,20 @@ void j6string_free(void *p, char file[], int line)
 
 	return;
 }
+void * j6string_realloc(void *p, size_t size, char file[], int line)
+{
+	p = realloc(p, size);
+
+	if(p == NULL)
+	{
+		debug_log(file, line, "memory allocate failed!!");
+		return NULL;
+	}
+
+	debug_log(file, line, "memory reallocate success");
+
+	return p;
+}
 unsigned char *j6string_gethashvalue(j6string_conv_table_hash *hashtable, size_t hashtable_size, unsigned char *key, int keylen)
 {
 	int hashkey = 0;
@@ -7956,6 +7970,34 @@ j6string_conv_table_hash *j6string_gen_convtable_hash(const j6string_conv_table 
 
 static char *sjis_each(unsigned char *p, j6string_exec_info *info, encconve_func convfunc)
 {
+	unsigned char *tmp = NULL;
+
+	if(info->convert_data.size <= 0)
+	{
+		return NULL;
+	}
+
+	if(*p == '\0')
+	{
+		if((info->convert_data.count) >= info->convert_data.size)	
+		{
+			tmp = (unsigned char *)j6string_realloc(info->convert_data.buff, info->convert_data.size * 2, __FILE__, __LINE__ );
+			
+			if(tmp == NULL)
+			{
+				info->convert_data.exit = 1;
+				info->convert_data.buff[--info->convert_data.count] = '\0';
+				return NULL;
+			}
+
+			info->convert_data.buff = (unsigned char *)tmp;
+		}
+		
+		info->convert_data.buff[info->convert_data.count] = '\0';
+
+		return NULL;
+	}
+
 	if(*p == 0x5C || *p == 0x7E || *p == 0x7F || (*p >= 0xA1 && *p <= 0xDF))
 	{
 		info->convert_data.count += convfunc(p, 1, info);
@@ -7971,29 +8013,82 @@ static char *sjis_each(unsigned char *p, j6string_exec_info *info, encconve_func
 	}
 	else
 	{
+		if((info->convert_data.count) >= info->convert_data.size)
+		{
+			tmp = (unsigned char *)j6string_realloc(info->convert_data.buff, info->convert_data.size * 2, __FILE__, __LINE__ );
+			
+			if(tmp == NULL)
+			{
+				info->convert_data.exit = 1;
+				info->convert_data.buff[--info->convert_data.count] = '\0';
+				return NULL;
+			}
+
+			info->convert_data.buff = (unsigned char *)tmp;
+		}
+
 		info->convert_data.buff[info->convert_data.count++] = *p++;
 	}
 
-	return (*p == '\0') ? NULL : p;
+	if(info->convert_data.exit == 1)
+	{
+		info->convert_data.buff[--info->convert_data.count] = '\0';
+		return NULL;
+	}
+
+	return p;
 }
 int encconv_sjis_to_utf8(char *p, int len, j6string_exec_info *info)
 {
 	unsigned char *convvalue = NULL;
 	int i=0;
 	int count=0;
+	void * tmp = NULL;
 	convvalue = j6string_gethashvalue(sjis_to_utf8_hashtable, sjis_to_utf8_hashtable_size, p, len);
 	
+	if(info->convert_data.exit == 1)
+	{
+		return 0;
+	}
+
 	if(convvalue == NULL)
 	{
 		for(i=0; i < len; i++)
 		{
-			sprintf((char *)&(info->convert_data.buff[info->convert_data.count]), "\\x%02X", *(p+i));
 			count += 4;
+
+			if((info->convert_data.count + count) > info->convert_data.size)
+			{
+				tmp = (unsigned char *)j6string_realloc(info->convert_data.buff, info->convert_data.size * 2, __FILE__, __LINE__ );
+			
+				if(tmp == NULL)
+				{
+					info->convert_data.exit = 1;
+					return 0;
+				}
+
+				info->convert_data.buff = (unsigned char *)tmp;
+			}
+
+			sprintf((char *)&(info->convert_data.buff[info->convert_data.count]), "\\x%02X", *(p+i));
 		}
 		return count;
 	}
 
 	count = strlen((char *)convvalue);
+
+	if((info->convert_data.count + count) > info->convert_data.size)
+	{
+		tmp = (unsigned char *)j6string_realloc(info->convert_data.buff, info->convert_data.size * 2, __FILE__, __LINE__ );
+			
+		if(tmp == NULL)
+		{
+			info->convert_data.exit = 1;
+			return 0;
+		}
+
+		info->convert_data.buff = (unsigned char *)tmp;
+	}
 
 	strncpy((char *)&(info->convert_data.buff[info->convert_data.count]), (char *)convvalue, count);
 
@@ -8011,7 +8106,16 @@ char *j6string_sjis_to_utf8(char str[])
 	sjis_to_utf8_hashtable_size = ((sizeof(sjis_to_utf8j6string_conv_table) / sizeof(j6string_conv_table)) * 5);
 	len = strlen((const char *)str) * 2;
 
+	if(len <= 0)
+	{
+		info.convert_data.buff = (unsigned char *)j6string_malloc(1, __FILE__, __LINE__ );
+		info.convert_data.buff[0] = '\0';
+		return info.convert_data.buff;
+	}
+
 	info.convert_data.buff = (unsigned char *)j6string_malloc(len, __FILE__, __LINE__ );
+	info.convert_data.size = len;
+	memset(info.convert_data.buff, 0x00, len);
 
 	if(info.convert_data.buff == NULL)
 	{
@@ -8052,5 +8156,21 @@ int j6string_release()
 
 	j6string_free(sjis_to_utf8_hashtable, __FILE__, __LINE__ );
 	return 1;
+}
+char * j6string_fileread(FILE *fp)
+{
+	char * buff;
+	size_t size = 0;
+
+	fseek( fp, 0, SEEK_END );
+	size = ftell( fp );
+
+	buff = (char *)j6string_malloc(size + 1, __FILE__, __LINE__ );
+	rewind(fp);
+	fread(buff, sizeof(char), size, fp);
+	fclose(fp);
+	buff[size] = '\0';
+
+	return buff;
 }
 

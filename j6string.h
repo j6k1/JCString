@@ -1,9 +1,11 @@
 #ifndef __J6STRING_H__
 #include <stdlib.h>
+#include <stdio.h>
 
 typedef struct {
 	int size;
 	int count;
+	int exit;
 	unsigned char *buff;
 } j6string_enc_convert_data;
 
@@ -30,6 +32,7 @@ unsigned char *j6string_gethashvalue(j6string_conv_table_hash *hashtable, size_t
 j6string_conv_table_hash *j6string_gen_convtable_hash(const j6string_conv_table table[], size_t table_size, size_t hashtable_size);
 char * j6string_sjis_to_utf8(char str[]);
 int j6string_release();
+char *j6string_fileread(FILE *fp);
 
 #define __J6STRING_H__
 #endif
