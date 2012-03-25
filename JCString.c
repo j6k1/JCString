@@ -7824,7 +7824,7 @@ static void JCString_DebugLog(char file[], int line, char format[], ...)
 
 static int get_table_hash(unsigned char *key,  unsigned int keylen, size_t hashtable_size)
 {
-	static const int multipliter = 255;
+	static const int multipliter = 251;
 	unsigned int h;
 	unsigned char *p;
 	unsigned char *end;
