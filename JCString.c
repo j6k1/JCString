@@ -7971,7 +7971,53 @@ JCString_conv_table_hash *JCString_GenConvTableHash(const JCString_conv_table ta
 
 	return hashtable;
 }
+JCString_conv_table_hash *JCString_GenConvInvertedTableHash(const JCString_conv_table table[], size_t table_size, size_t hashtable_size)
+{
+	int count = 0;
+	int i=0;
+	char *key = NULL;
+	char *val = NULL;
+	unsigned int len = 0;
+	int hash = 0;
+	JCString_conv_table_hash *hashentry = NULL;
 
+	JCString_conv_table_hash *hashtable = NULL;
+	hashtable = (JCString_conv_table_hash *)JCString_Malloc(hashtable_size * sizeof(JCString_conv_table_hash), __FILE__, __LINE__ );
+	memset(hashtable, 0x00, sizeof(JCString_conv_table_hash) * hashtable_size);
+
+	count = table_size / sizeof(JCString_conv_table);
+
+	for(i=0; i < count; i++)
+	{
+		key = (char *)&(table[i].key[0]);
+		val = (char *)&(table[i].val[0]);
+
+		//本関数では、キーと値を逆にしてハッシュを生成するため、val（値）の長さを求める。
+		for(len=0; val[len] != '\0'; len++);
+
+		//本関数では、キーと値を逆にしてハッシュを生成するため、val（値）を元にハッシュを生成する。
+		hash = get_table_hash(val, len, hashtable_size);
+
+		hashentry = &hashtable[hash];
+
+		if(hashentry->key != NULL)
+		{
+			while(hashentry->next != NULL)
+			{
+				hashentry = hashentry->next;
+			}	
+			hashentry->next = (JCString_conv_table_hash *)JCString_Malloc(sizeof(JCString_conv_table_hash), __FILE__, __LINE__ );
+			hashentry = hashentry->next;
+		}
+
+		//本関数では、キーと値を逆にしてハッシュを生成するため、val（値）とkey（キー）を逆にしてハッシュに設定する。
+		hashentry->key = val;
+		hashentry->val = key;
+		hashentry->next = NULL;
+	}
+
+	return hashtable;
+}
 static char *sjis_each(unsigned char *p, JCString_exec_info *info, encconve_func convfunc)
 {
 	if(info->data.convert_data.size <= 0)

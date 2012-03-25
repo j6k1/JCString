@@ -38,6 +38,7 @@ void JCString_Free(void *p, char file[], int line);
 int JCString_Release();
 unsigned char *JCString_GetHashValue(JCString_conv_table_hash *hashtable, size_t hashtable_size, unsigned char *key, int keylen);
 JCString_conv_table_hash *JCString_GenConvTableHash(const JCString_conv_table table[], size_t table_size, size_t hashtable_size);
+JCString_conv_table_hash *JCString_GenConvInvertedTableHash(const JCString_conv_table table[], size_t table_size, size_t hashtable_size);
 char * JCString_SjisToUTF8(char str[]);
 char *JCString_FileRead(FILE *fp);
 
