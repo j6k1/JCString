@@ -7983,13 +7983,13 @@ static char *sjis_each(unsigned char *p, JCString_exec_info *info, encconve_func
 	{
 		if((info->data.convert_data.count) >= info->data.convert_data.size)	
 		{
-			if(JCString_Realloc((void **)(&info->data.convert_data.buff), info->data.convert_data.size * 2, __FILE__, __LINE__ ) == -1)
+			if(JCString_Realloc((void **)(&info->data.convert_data.buff), info->data.convert_data.size + 1, __FILE__, __LINE__ ) == -1)
 			{
 				info->header.exit = 1;
 				info->data.convert_data.buff[--info->data.convert_data.count] = '\0';
 				return NULL;
 			}
-			info->data.convert_data.size = info->data.convert_data.size * 2;
+			info->data.convert_data.size = info->data.convert_data.size + 1;
 		}
 		
 		info->data.convert_data.buff[info->data.convert_data.count] = '\0';
