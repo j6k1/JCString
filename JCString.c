@@ -7973,73 +7973,73 @@ static char *sjis_each(unsigned char *p, JCString_exec_info *info, encconve_func
 {
 	unsigned char *tmp = NULL;
 
-	if(info->convert_data.size <= 0)
+	if(info->data.convert_data.size <= 0)
 	{
 		return NULL;
 	}
 
 	if(*p == '\0')
 	{
-		if((info->convert_data.count) >= info->convert_data.size)	
+		if((info->data.convert_data.count) >= info->data.convert_data.size)	
 		{
-			tmp = (unsigned char *)JCString_Realloc(info->convert_data.buff, info->convert_data.size * 2, __FILE__, __LINE__ );
+			tmp = (unsigned char *)JCString_Realloc(info->data.convert_data.buff, info->data.convert_data.size * 2, __FILE__, __LINE__ );
 			
 			if(tmp == NULL)
 			{
-				info->convert_data.exit = 1;
-				info->convert_data.buff[--info->convert_data.count] = '\0';
+				info->header.exit = 1;
+				info->data.convert_data.buff[--info->data.convert_data.count] = '\0';
 				return NULL;
 			}
 
-			info->convert_data.buff = (unsigned char *)tmp;
+			info->data.convert_data.buff = (unsigned char *)tmp;
 		}
 		
-		info->convert_data.buff[info->convert_data.count] = '\0';
+		info->data.convert_data.buff[info->data.convert_data.count] = '\0';
 
 		return NULL;
 	}
 
 	if(*p == 0x5C || *p == 0x7E || *p == 0x7F || (*p >= 0xA1 && *p <= 0xDF))
 	{
-		info->convert_data.count += convfunc(p, 1, info);
+		info->data.convert_data.count += convfunc(p, 1, info);
 		p++;
 	}
 	else if((*p >= 0x81 && *p <= 0x9F) || (*p >= 0xEF && *p <= 0xFC))
 	{
 		if((*(p+1) >= 0x40 && *(p+1) <= 0x7E) || (*(p+1) >= 0x80 && *(p+1) <= 0xFC))
 		{
-			info->convert_data.count += convfunc(p, 2, info);
+			info->data.convert_data.count += convfunc(p, 2, info);
 			p+=2;
 		}
 	}
 	else
 	{
-		if((info->convert_data.count) >= info->convert_data.size)
+		if((info->data.convert_data.count) >= info->data.convert_data.size)
 		{
-			tmp = (unsigned char *)JCString_Realloc(info->convert_data.buff, info->convert_data.size * 2, __FILE__, __LINE__ );
+			tmp = (unsigned char *)JCString_Realloc(info->data.convert_data.buff, info->data.convert_data.size * 2, __FILE__, __LINE__ );
 			
 			if(tmp == NULL)
 			{
-				info->convert_data.exit = 1;
-				info->convert_data.buff[--info->convert_data.count] = '\0';
+				info->header.exit = 1;
+				info->data.convert_data.buff[--info->data.convert_data.count] = '\0';
 				return NULL;
 			}
 
-			info->convert_data.buff = (unsigned char *)tmp;
+			info->data.convert_data.buff = (unsigned char *)tmp;
 		}
 
-		info->convert_data.buff[info->convert_data.count++] = *p++;
+		info->data.convert_data.buff[info->data.convert_data.count++] = *p++;
 	}
 
-	if(info->convert_data.exit == 1)
+	if(info->header.exit == 1)
 	{
-		info->convert_data.buff[--info->convert_data.count] = '\0';
+		info->data.convert_data.buff[--info->data.convert_data.count] = '\0';
 		return NULL;
 	}
 
 	return p;
 }
-int encconv_sjis_to_utf8(char *p, int len, JCString_exec_info *info)
+static int encconv_sjis_to_utf8(char *p, int len, JCString_exec_info *info)
 {
 	unsigned char *convvalue = NULL;
 	int i=0;
@@ -8047,7 +8047,7 @@ int encconv_sjis_to_utf8(char *p, int len, JCString_exec_info *info)
 	void * tmp = NULL;
 	convvalue = JCString_GetHashValue(sjis_to_utf8_hashtable, sjis_to_utf8_hashtable_size, p, len);
 	
-	if(info->convert_data.exit == 1)
+	if(info->header.exit == 1)
 	{
 		return 0;
 	}
@@ -8058,40 +8058,40 @@ int encconv_sjis_to_utf8(char *p, int len, JCString_exec_info *info)
 		{
 			count += 4;
 
-			if((info->convert_data.count + count) > info->convert_data.size)
+			if((info->data.convert_data.count + count) > info->data.convert_data.size)
 			{
-				tmp = (unsigned char *)JCString_Realloc(info->convert_data.buff, info->convert_data.size * 2, __FILE__, __LINE__ );
+				tmp = (unsigned char *)JCString_Realloc(info->data.convert_data.buff, info->data.convert_data.size * 2, __FILE__, __LINE__ );
 			
 				if(tmp == NULL)
 				{
-					info->convert_data.exit = 1;
+					info->header.exit = 1;
 					return 0;
 				}
 
-				info->convert_data.buff = (unsigned char *)tmp;
+				info->data.convert_data.buff = (unsigned char *)tmp;
 			}
 
-			sprintf((char *)&(info->convert_data.buff[info->convert_data.count]), "\\x%02X", *(p+i));
+			sprintf((char *)&(info->data.convert_data.buff[info->data.convert_data.count]), "\\x%02X", *(p+i));
 		}
 		return count;
 	}
 
 	count = strlen((char *)convvalue);
 
-	if((info->convert_data.count + count) > info->convert_data.size)
+	if((info->data.convert_data.count + count) > info->data.convert_data.size)
 	{
-		tmp = (unsigned char *)JCString_Realloc(info->convert_data.buff, info->convert_data.size * 2, __FILE__, __LINE__ );
+		tmp = (unsigned char *)JCString_Realloc(info->data.convert_data.buff, info->data.convert_data.size * 2, __FILE__, __LINE__ );
 			
 		if(tmp == NULL)
 		{
-			info->convert_data.exit = 1;
+			info->header.exit = 1;
 			return 0;
 		}
 
-		info->convert_data.buff = (unsigned char *)tmp;
+		info->data.convert_data.buff = (unsigned char *)tmp;
 	}
 
-	strncpy((char *)&(info->convert_data.buff[info->convert_data.count]), (char *)convvalue, count);
+	strncpy((char *)&(info->data.convert_data.buff[info->data.convert_data.count]), (char *)convvalue, count);
 
 	return count;
 }
@@ -8109,22 +8109,22 @@ char *JCString_SjisToUTF8(char str[])
 
 	if(len <= 0)
 	{
-		info.convert_data.buff = (unsigned char *)JCString_Malloc(1, __FILE__, __LINE__ );
-		info.convert_data.buff[0] = '\0';
-		return info.convert_data.buff;
+		info.data.convert_data.buff = (unsigned char *)JCString_Malloc(1, __FILE__, __LINE__ );
+		info.data.convert_data.buff[0] = '\0';
+		return info.data.convert_data.buff;
 	}
 
-	info.convert_data.buff = (unsigned char *)JCString_Malloc(len, __FILE__, __LINE__ );
-	info.convert_data.size = len;
-	memset(info.convert_data.buff, 0x00, len);
+	info.data.convert_data.buff = (unsigned char *)JCString_Malloc(len, __FILE__, __LINE__ );
+	info.data.convert_data.size = len;
+	memset(info.data.convert_data.buff, 0x00, len);
 
-	if(info.convert_data.buff == NULL)
+	if(info.data.convert_data.buff == NULL)
 	{
 		JCString_DebugLog(__FILE__, __LINE__, "memory allocate failed!!");
 		return str;
 	}
 
-	memset(info.convert_data.buff, 0x00, len);
+	memset(info.data.convert_data.buff, 0x00, len);
 
 	if(sjis_to_utf8_hashtable == NULL)
 	{
@@ -8133,7 +8133,7 @@ char *JCString_SjisToUTF8(char str[])
 
 	while((p = sjis_each(p, &info, encconv_sjis_to_utf8)) != NULL);
 
-	return info.convert_data.buff;
+	return info.data.convert_data.buff;
 }
 int JCString_Release()
 {

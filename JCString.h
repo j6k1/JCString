@@ -2,17 +2,22 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+
 typedef struct {
 	int size;
 	int count;
-	int exit;
 	unsigned char *buff;
 } JCString_enc_convert_data;
 
-typedef union {
-	JCString_enc_convert_data convert_data;
+typedef struct {
+	int exit;
+} JCString_exec_info_header ;
+typedef struct {
+	JCString_exec_info_header header;
+	union _JCString_exec_info_by_feature {
+		JCString_enc_convert_data convert_data;
+	} data;
 } JCString_exec_info;
-
 
 typedef struct {
 	char key[5];
