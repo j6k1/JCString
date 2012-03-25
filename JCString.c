@@ -1,10 +1,10 @@
-#include "j6string.h"
+#include "JCString.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 
-static const j6string_conv_table sjis_to_utf8j6string_conv_table[] = {
+static const JCString_conv_table sjis_to_utf8_conv_table[] = {
 	 { { 0x5C, 0x00 }, { 0x5C, 0x00 } }
 	,{ { 0x7E, 0x00 }, { 0x7E, 0x00 } }
 	,{ { 0xA1, 0x00 }, { 0xEF, 0xBD, 0xA1, 0x00 } }
@@ -7795,18 +7795,19 @@ static const j6string_conv_table sjis_to_utf8j6string_conv_table[] = {
 	,{ { 0xFC, 0x4A, 0x00 }, { 0xE9, 0xB8, 0x99, 0x00 } }
 	,{ { 0xFC, 0x4B, 0x00 }, { 0xE9, 0xBB, 0x91, 0x00 } }
 };
-typedef int (*encconve_func)(char *p, int len, j6string_exec_info *info);
-int encconv_sjis_to_utf8(char *p, int len, j6string_exec_info *info);
-static j6string_conv_table_hash *sjis_to_utf8_hashtable = NULL;
+
+typedef int (*encconve_func)(char *p, int len, JCString_exec_info *info);
+
+static JCString_conv_table_hash *sjis_to_utf8_hashtable = NULL;
 static size_t sjis_to_utf8_hashtable_size = 0;
 static int alloc_count = 0;
 
-static void debug_log(char file[], int line, char format[], ...);
 static int get_table_hash(unsigned char *key,  unsigned int keylen, size_t hashtable_size);
-static int hashtable_release(j6string_conv_table_hash *hashentry);
-static char *sjis_each(unsigned char *p, j6string_exec_info *info, encconve_func convfunc);
+static int hashtable_release(JCString_conv_table_hash *hashentry);
+static char *sjis_each(unsigned char *p, JCString_exec_info *info, encconve_func convfunc);
+static int encconv_sjis_to_utf8(char *p, int len, JCString_exec_info *info);
 
-static void debug_log(char file[], int line, char format[], ...)
+static void JCString_DebugLog(char file[], int line, char format[], ...)
 {
 	va_list ap;
 	va_start(ap, format);
@@ -7838,7 +7839,7 @@ static int get_table_hash(unsigned char *key,  unsigned int keylen, size_t hasht
 
 	return h % hashtable_size;
 }
-static int hashtable_release(j6string_conv_table_hash *hashentry)
+static int hashtable_release(JCString_conv_table_hash *hashentry)
 {
 	if(hashentry == NULL)
 	{
@@ -7850,11 +7851,11 @@ static int hashtable_release(j6string_conv_table_hash *hashentry)
 		hashtable_release(hashentry->next);
 	}
 
-	j6string_free(hashentry, __FILE__, __LINE__ );
+	JCString_Free(hashentry, __FILE__, __LINE__ );
 
 	return 1;
 }
-void * j6string_malloc(size_t size, char file[], int line)
+void * JCString_Malloc(size_t size, char file[], int line)
 {
 	void * p = NULL;
 
@@ -7862,46 +7863,46 @@ void * j6string_malloc(size_t size, char file[], int line)
 
 	if(p == NULL)
 	{
-		debug_log(file, line, "memory allocate failed!!");
+		JCString_DebugLog(file, line, "memory allocate failed!!");
 		return NULL;
 	}
 
 	alloc_count++;
 
-	debug_log(file, line, "memory allocate success");
-	debug_log(file, line, "allocated memory count is %d", alloc_count);
+	JCString_DebugLog(file, line, "memory allocate success");
+	JCString_DebugLog(file, line, "allocated memory count is %d", alloc_count);
 
 	return p;
 }
-void j6string_free(void *p, char file[], int line)
+void JCString_Free(void *p, char file[], int line)
 {
 	free(p);
 
 	alloc_count--;
 
-	debug_log(file, line, "memory free success");
-	debug_log(file, line, "allocated memory count is %d", alloc_count);
+	JCString_DebugLog(file, line, "memory free success");
+	JCString_DebugLog(file, line, "allocated memory count is %d", alloc_count);
 
 	return;
 }
-void * j6string_realloc(void *p, size_t size, char file[], int line)
+void * JCString_Realloc(void *p, size_t size, char file[], int line)
 {
 	p = realloc(p, size);
 
 	if(p == NULL)
 	{
-		debug_log(file, line, "memory allocate failed!!");
+		JCString_DebugLog(file, line, "memory allocate failed!!");
 		return NULL;
 	}
 
-	debug_log(file, line, "memory reallocate success");
+	JCString_DebugLog(file, line, "memory reallocate success");
 
 	return p;
 }
-unsigned char *j6string_gethashvalue(j6string_conv_table_hash *hashtable, size_t hashtable_size, unsigned char *key, int keylen)
+unsigned char *JCString_GetHashValue(JCString_conv_table_hash *hashtable, size_t hashtable_size, unsigned char *key, int keylen)
 {
 	int hashkey = 0;
-	j6string_conv_table_hash *hashentry = NULL;
+	JCString_conv_table_hash *hashentry = NULL;
 
 	hashkey = get_table_hash(key, keylen, hashtable_size);
 	hashentry = &hashtable[hashkey];
@@ -7923,7 +7924,7 @@ unsigned char *j6string_gethashvalue(j6string_conv_table_hash *hashtable, size_t
 	
 	return hashentry->val;
 }
-j6string_conv_table_hash *j6string_gen_convtable_hash(const j6string_conv_table table[], size_t table_size, size_t hashtable_size)
+JCString_conv_table_hash *JCString_GenConvTableHash(const JCString_conv_table table[], size_t table_size, size_t hashtable_size)
 {
 	int count = 0;
 	int i=0;
@@ -7931,13 +7932,13 @@ j6string_conv_table_hash *j6string_gen_convtable_hash(const j6string_conv_table 
 	char *val = NULL;
 	unsigned int len = 0;
 	int hash = 0;
-	j6string_conv_table_hash *hashentry = NULL;
+	JCString_conv_table_hash *hashentry = NULL;
 
-	j6string_conv_table_hash *hashtable = NULL;
-	hashtable = (j6string_conv_table_hash *)j6string_malloc(hashtable_size * sizeof(j6string_conv_table_hash), __FILE__, __LINE__ );
-	memset(hashtable, 0x00, sizeof(j6string_conv_table_hash) * hashtable_size);
+	JCString_conv_table_hash *hashtable = NULL;
+	hashtable = (JCString_conv_table_hash *)JCString_Malloc(hashtable_size * sizeof(JCString_conv_table_hash), __FILE__, __LINE__ );
+	memset(hashtable, 0x00, sizeof(JCString_conv_table_hash) * hashtable_size);
 
-	count = table_size / sizeof(j6string_conv_table);
+	count = table_size / sizeof(JCString_conv_table);
 
 	for(i=0; i < count; i++)
 	{
@@ -7956,7 +7957,7 @@ j6string_conv_table_hash *j6string_gen_convtable_hash(const j6string_conv_table 
 			{
 				hashentry = hashentry->next;
 			}	
-			hashentry->next = (j6string_conv_table_hash *)j6string_malloc(sizeof(j6string_conv_table_hash), __FILE__, __LINE__ );
+			hashentry->next = (JCString_conv_table_hash *)JCString_Malloc(sizeof(JCString_conv_table_hash), __FILE__, __LINE__ );
 			hashentry = hashentry->next;
 		}
 
@@ -7968,7 +7969,7 @@ j6string_conv_table_hash *j6string_gen_convtable_hash(const j6string_conv_table 
 	return hashtable;
 }
 
-static char *sjis_each(unsigned char *p, j6string_exec_info *info, encconve_func convfunc)
+static char *sjis_each(unsigned char *p, JCString_exec_info *info, encconve_func convfunc)
 {
 	unsigned char *tmp = NULL;
 
@@ -7981,7 +7982,7 @@ static char *sjis_each(unsigned char *p, j6string_exec_info *info, encconve_func
 	{
 		if((info->convert_data.count) >= info->convert_data.size)	
 		{
-			tmp = (unsigned char *)j6string_realloc(info->convert_data.buff, info->convert_data.size * 2, __FILE__, __LINE__ );
+			tmp = (unsigned char *)JCString_Realloc(info->convert_data.buff, info->convert_data.size * 2, __FILE__, __LINE__ );
 			
 			if(tmp == NULL)
 			{
@@ -8015,7 +8016,7 @@ static char *sjis_each(unsigned char *p, j6string_exec_info *info, encconve_func
 	{
 		if((info->convert_data.count) >= info->convert_data.size)
 		{
-			tmp = (unsigned char *)j6string_realloc(info->convert_data.buff, info->convert_data.size * 2, __FILE__, __LINE__ );
+			tmp = (unsigned char *)JCString_Realloc(info->convert_data.buff, info->convert_data.size * 2, __FILE__, __LINE__ );
 			
 			if(tmp == NULL)
 			{
@@ -8038,13 +8039,13 @@ static char *sjis_each(unsigned char *p, j6string_exec_info *info, encconve_func
 
 	return p;
 }
-int encconv_sjis_to_utf8(char *p, int len, j6string_exec_info *info)
+int encconv_sjis_to_utf8(char *p, int len, JCString_exec_info *info)
 {
 	unsigned char *convvalue = NULL;
 	int i=0;
 	int count=0;
 	void * tmp = NULL;
-	convvalue = j6string_gethashvalue(sjis_to_utf8_hashtable, sjis_to_utf8_hashtable_size, p, len);
+	convvalue = JCString_GetHashValue(sjis_to_utf8_hashtable, sjis_to_utf8_hashtable_size, p, len);
 	
 	if(info->convert_data.exit == 1)
 	{
@@ -8059,7 +8060,7 @@ int encconv_sjis_to_utf8(char *p, int len, j6string_exec_info *info)
 
 			if((info->convert_data.count + count) > info->convert_data.size)
 			{
-				tmp = (unsigned char *)j6string_realloc(info->convert_data.buff, info->convert_data.size * 2, __FILE__, __LINE__ );
+				tmp = (unsigned char *)JCString_Realloc(info->convert_data.buff, info->convert_data.size * 2, __FILE__, __LINE__ );
 			
 				if(tmp == NULL)
 				{
@@ -8079,7 +8080,7 @@ int encconv_sjis_to_utf8(char *p, int len, j6string_exec_info *info)
 
 	if((info->convert_data.count + count) > info->convert_data.size)
 	{
-		tmp = (unsigned char *)j6string_realloc(info->convert_data.buff, info->convert_data.size * 2, __FILE__, __LINE__ );
+		tmp = (unsigned char *)JCString_Realloc(info->convert_data.buff, info->convert_data.size * 2, __FILE__, __LINE__ );
 			
 		if(tmp == NULL)
 		{
@@ -8094,32 +8095,32 @@ int encconv_sjis_to_utf8(char *p, int len, j6string_exec_info *info)
 
 	return count;
 }
-char *j6string_sjis_to_utf8(char str[])
+char *JCString_SjisToUTF8(char str[])
 {
 	int len = 0;
 	unsigned char *p = NULL;
-	j6string_exec_info info;
+	JCString_exec_info info;
 	memset(&info, 0x00, sizeof(info));
 
 	p = (unsigned char*)str;
 
-	sjis_to_utf8_hashtable_size = ((sizeof(sjis_to_utf8j6string_conv_table) / sizeof(j6string_conv_table)) * 5);
+	sjis_to_utf8_hashtable_size = ((sizeof(sjis_to_utf8_conv_table) / sizeof(JCString_conv_table)) * 5);
 	len = strlen((const char *)str) * 2;
 
 	if(len <= 0)
 	{
-		info.convert_data.buff = (unsigned char *)j6string_malloc(1, __FILE__, __LINE__ );
+		info.convert_data.buff = (unsigned char *)JCString_Malloc(1, __FILE__, __LINE__ );
 		info.convert_data.buff[0] = '\0';
 		return info.convert_data.buff;
 	}
 
-	info.convert_data.buff = (unsigned char *)j6string_malloc(len, __FILE__, __LINE__ );
+	info.convert_data.buff = (unsigned char *)JCString_Malloc(len, __FILE__, __LINE__ );
 	info.convert_data.size = len;
 	memset(info.convert_data.buff, 0x00, len);
 
 	if(info.convert_data.buff == NULL)
 	{
-		debug_log(__FILE__, __LINE__, "memory allocate failed!!");
+		JCString_DebugLog(__FILE__, __LINE__, "memory allocate failed!!");
 		return str;
 	}
 
@@ -8127,14 +8128,14 @@ char *j6string_sjis_to_utf8(char str[])
 
 	if(sjis_to_utf8_hashtable == NULL)
 	{
-		sjis_to_utf8_hashtable = j6string_gen_convtable_hash(sjis_to_utf8j6string_conv_table, sizeof(sjis_to_utf8j6string_conv_table), sjis_to_utf8_hashtable_size);
+		sjis_to_utf8_hashtable = JCString_GenConvTableHash(sjis_to_utf8_conv_table, sizeof(sjis_to_utf8_conv_table), sjis_to_utf8_hashtable_size);
 	}
 
 	while((p = sjis_each(p, &info, encconv_sjis_to_utf8)) != NULL);
 
 	return info.convert_data.buff;
 }
-int j6string_release()
+int JCString_Release()
 {
 	int i=0;
 	int ret=0;
@@ -8149,15 +8150,15 @@ int j6string_release()
 
 		if(ret == -1)
 		{
-			debug_log(__FILE__, __LINE__, "memory release err!!");
+			JCString_DebugLog(__FILE__, __LINE__, "memory release err!!");
 	
 		}
 	}
 
-	j6string_free(sjis_to_utf8_hashtable, __FILE__, __LINE__ );
+	JCString_Free(sjis_to_utf8_hashtable, __FILE__, __LINE__ );
 	return 1;
 }
-char * j6string_fileread(FILE *fp)
+char * JCString_FileRead(FILE *fp)
 {
 	char * buff;
 	size_t size = 0;
@@ -8165,7 +8166,7 @@ char * j6string_fileread(FILE *fp)
 	fseek( fp, 0, SEEK_END );
 	size = ftell( fp );
 
-	buff = (char *)j6string_malloc(size + 1, __FILE__, __LINE__ );
+	buff = (char *)JCString_Malloc(size + 1, __FILE__, __LINE__ );
 	rewind(fp);
 	fread(buff, sizeof(char), size, fp);
 	fclose(fp);
