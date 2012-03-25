@@ -7852,6 +7852,7 @@ static int hashtable_release(JCString_conv_table_hash *hashentry)
 	}
 
 	JCString_Free(hashentry, __FILE__, __LINE__ );
+	hashentry = NULL;
 
 	return 1;
 }
@@ -8179,7 +8180,7 @@ int JCString_Release()
 		if(sjis_to_utf8_hashtable[i].next != NULL)
 		{
 			ret = hashtable_release(sjis_to_utf8_hashtable[i].next);
-		
+			sjis_to_utf8_hashtable[i].next = NULL;
 		}
 
 		if(ret == -1)
@@ -8190,6 +8191,8 @@ int JCString_Release()
 	}
 
 	JCString_Free(sjis_to_utf8_hashtable, __FILE__, __LINE__ );
+	sjis_to_utf8_hashtable = NULL;
+
 	return 1;
 }
 char * JCString_FileRead(FILE *fp)
