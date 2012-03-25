@@ -7885,19 +7885,22 @@ void JCString_Free(void *p, char file[], int line)
 
 	return;
 }
-void * JCString_Realloc(void *p, size_t size, char file[], int line)
+int JCString_Realloc(void **p, size_t size, char file[], int line)
 {
-	p = realloc(p, size);
+	void *tmp;
+	tmp = realloc(*p, size);
 
-	if(p == NULL)
+	if(tmp == NULL)
 	{
 		JCString_DebugLog(file, line, "memory allocate failed!!");
-		return NULL;
+		return -1;
 	}
 
 	JCString_DebugLog(file, line, "memory reallocate success");
 
-	return p;
+	*p = tmp;
+
+	return 1;
 }
 unsigned char *JCString_GetHashValue(JCString_conv_table_hash *hashtable, size_t hashtable_size, unsigned char *key, int keylen)
 {
@@ -7971,8 +7974,6 @@ JCString_conv_table_hash *JCString_GenConvTableHash(const JCString_conv_table ta
 
 static char *sjis_each(unsigned char *p, JCString_exec_info *info, encconve_func convfunc)
 {
-	unsigned char *tmp = NULL;
-
 	if(info->data.convert_data.size <= 0)
 	{
 		return NULL;
@@ -7982,16 +7983,13 @@ static char *sjis_each(unsigned char *p, JCString_exec_info *info, encconve_func
 	{
 		if((info->data.convert_data.count) >= info->data.convert_data.size)	
 		{
-			tmp = (unsigned char *)JCString_Realloc(info->data.convert_data.buff, info->data.convert_data.size * 2, __FILE__, __LINE__ );
-			
-			if(tmp == NULL)
+			if(JCString_Realloc((void **)(&info->data.convert_data.buff), info->data.convert_data.size * 2, __FILE__, __LINE__ ) == -1)
 			{
 				info->header.exit = 1;
 				info->data.convert_data.buff[--info->data.convert_data.count] = '\0';
 				return NULL;
 			}
-
-			info->data.convert_data.buff = (unsigned char *)tmp;
+			info->data.convert_data.size = info->data.convert_data.size * 2;
 		}
 		
 		info->data.convert_data.buff[info->data.convert_data.count] = '\0';
@@ -8016,16 +8014,13 @@ static char *sjis_each(unsigned char *p, JCString_exec_info *info, encconve_func
 	{
 		if((info->data.convert_data.count) >= info->data.convert_data.size)
 		{
-			tmp = (unsigned char *)JCString_Realloc(info->data.convert_data.buff, info->data.convert_data.size * 2, __FILE__, __LINE__ );
-			
-			if(tmp == NULL)
+			if(JCString_Realloc((void **)(&info->data.convert_data.buff), info->data.convert_data.size * 2, __FILE__, __LINE__ ) == -1)
 			{
 				info->header.exit = 1;
 				info->data.convert_data.buff[--info->data.convert_data.count] = '\0';
 				return NULL;
 			}
-
-			info->data.convert_data.buff = (unsigned char *)tmp;
+			info->data.convert_data.size = info->data.convert_data.size * 2;
 		}
 
 		info->data.convert_data.buff[info->data.convert_data.count++] = *p++;
@@ -8044,7 +8039,6 @@ static int encconv_sjis_to_utf8(char *p, int len, JCString_exec_info *info)
 	unsigned char *convvalue = NULL;
 	int i=0;
 	int count=0;
-	void * tmp = NULL;
 	convvalue = JCString_GetHashValue(sjis_to_utf8_hashtable, sjis_to_utf8_hashtable_size, p, len);
 	
 	if(info->header.exit == 1)
@@ -8060,15 +8054,12 @@ static int encconv_sjis_to_utf8(char *p, int len, JCString_exec_info *info)
 
 			if((info->data.convert_data.count + count) > info->data.convert_data.size)
 			{
-				tmp = (unsigned char *)JCString_Realloc(info->data.convert_data.buff, info->data.convert_data.size * 2, __FILE__, __LINE__ );
-			
-				if(tmp == NULL)
+				if(JCString_Realloc((void **)(&info->data.convert_data.buff), info->data.convert_data.size * 2, __FILE__, __LINE__ ) == -1)
 				{
 					info->header.exit = 1;
 					return 0;
 				}
-
-				info->data.convert_data.buff = (unsigned char *)tmp;
+				info->data.convert_data.size = info->data.convert_data.size * 2;
 			}
 
 			sprintf((char *)&(info->data.convert_data.buff[info->data.convert_data.count]), "\\x%02X", *(p+i));
@@ -8080,15 +8071,12 @@ static int encconv_sjis_to_utf8(char *p, int len, JCString_exec_info *info)
 
 	if((info->data.convert_data.count + count) > info->data.convert_data.size)
 	{
-		tmp = (unsigned char *)JCString_Realloc(info->data.convert_data.buff, info->data.convert_data.size * 2, __FILE__, __LINE__ );
-			
-		if(tmp == NULL)
+		if(JCString_Realloc((void **)(&info->data.convert_data.buff), info->data.convert_data.size * 2, __FILE__, __LINE__ ) == -1)
 		{
 			info->header.exit = 1;
 			return 0;
 		}
-
-		info->data.convert_data.buff = (unsigned char *)tmp;
+		info->data.convert_data.size = info->data.convert_data.size * 2;
 	}
 
 	strncpy((char *)&(info->data.convert_data.buff[info->data.convert_data.count]), (char *)convvalue, count);

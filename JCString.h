@@ -33,7 +33,7 @@ struct _JCString_conv_table_hash {
 };
 void JCString_DebugLog(char file[], int line, char format[], ...);
 void * JCString_Malloc(size_t size, char file[], int line);
-void * JCString_Realloc(void *p, size_t size, char file[], int line);
+int JCString_Realloc(void **p, size_t size, char file[], int line);
 void JCString_Free(void *p, char file[], int line);
 int JCString_Release();
 unsigned char *JCString_GetHashValue(JCString_conv_table_hash *hashtable, size_t hashtable_size, unsigned char *key, int keylen);
