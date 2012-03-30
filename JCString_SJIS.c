@@ -1,5 +1,4 @@
 #include "JCString.h"
-#include "JCString_SJISUTF8_Table.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -84,11 +83,11 @@ static int encconv_sjis_to_utf8(unsigned char *p, JCString_exec_info *info)
 		return count;
 	}
 
-	sjis_to_utf8_hashtable_size = ((sizeof(sjis_to_utf8_conv_table) / sizeof(JCString_conv_table)) * 5);
+	sjis_to_utf8_hashtable_size = ((JCString_sjis_to_utf8_conv_table_size / sizeof(JCString_conv_table)) * 5);
 
 	if(sjis_to_utf8_hashtable == NULL)
 	{
-		sjis_to_utf8_hashtable = JCString_GenConvTableHash(sjis_to_utf8_conv_table, sizeof(sjis_to_utf8_conv_table), sjis_to_utf8_hashtable_size,
+		sjis_to_utf8_hashtable = JCString_GenConvTableHash(JCString_sjis_to_utf8_conv_table, JCString_sjis_to_utf8_conv_table_size, sjis_to_utf8_hashtable_size,
 			sjis_each);
 	}
 

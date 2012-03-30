@@ -1,5 +1,4 @@
 #include "JCString.h"
-#include "JCString_SJISUTF8_Table.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>

@@ -63,6 +63,9 @@ typedef char * (*JCString_Each)(unsigned char *p);
 typedef enum JCSTRING_BOOL (*JCString_IsEnd_String)(unsigned char *p);
 typedef int (*JCString_ConvertEncode)(unsigned char *p, JCString_exec_info *info);
 
+extern const JCString_conv_table JCString_sjis_to_utf8_conv_table[];
+extern size_t JCString_sjis_to_utf8_conv_table_size;
+
 void JCString_DebugLog(char file[], int line, char format[], ...);
 size_t JCString_StrLen(const char *p, JCString_Each string_each_func);
 void * JCString_Malloc(size_t size, char file[], int line);
