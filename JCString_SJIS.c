@@ -7,12 +7,12 @@
 static JCString_conv_table_hash *sjis_to_utf8_hashtable = NULL;
 static size_t sjis_to_utf8_hashtable_size = 0;
 
-static char *sjis_each(unsigned char *p);
-static int sjis_charsize(unsigned char *p);
+static char *string_each(unsigned char *p);
+static int string_charsize(unsigned char *p);
 static int encconv_sjis_to_utf8(unsigned char *p, JCString_exec_info *info);
 static JCSTRING_BOOL isend_string(unsigned char *p);
 
-static int sjis_charsize(unsigned char *p)
+static int string_charsize(unsigned char *p)
 {
 	if((*p >= 0x00 && *p <= 0x7F) || (*p >= 0xA1 && *p <= 0xDF))
 	{
@@ -28,7 +28,7 @@ static int sjis_charsize(unsigned char *p)
 
 	return 0;
 }
-static char *sjis_each(unsigned char *p, unsigned char *end)
+static char *string_each(unsigned char *p, unsigned char *end)
 {
 	if( ((end != NULL) && (p >= end)) || ((end == NULL) && (isend_string(p) == JCSTRING_TRUE)) )
 	{
@@ -86,10 +86,10 @@ static int encconv_sjis_to_utf8(unsigned char *p, JCString_exec_info *info)
 	if(sjis_to_utf8_hashtable == NULL)
 	{
 		sjis_to_utf8_hashtable = JCString_GenConvTableHash(JCString_sjis_to_utf8_conv_table, JCString_sjis_to_utf8_conv_table_size, sjis_to_utf8_hashtable_size,
-			sjis_each);
+			string_each);
 	}
 
-	len = sjis_charsize(p);
+	len = string_charsize(p);
 
 	convvalue = JCString_GetHashValue(sjis_to_utf8_hashtable, sjis_to_utf8_hashtable_size, p, len, JCString_Get_UTF8Each());
 	
@@ -144,6 +144,6 @@ static JCSTRING_BOOL isend_string(unsigned char *p)
 }
 JCString_String JCString_SjisToUTF8(JCString_String str)
 {
-	return JCString_ConvEncoding(str, sjis_each, encconv_sjis_to_utf8, isend_string);
+	return JCString_ConvEncoding(str, string_each, encconv_sjis_to_utf8, isend_string);
 }
 
