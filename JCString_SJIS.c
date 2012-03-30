@@ -28,9 +28,9 @@ static int sjis_charsize(unsigned char *p)
 
 	return 0;
 }
-static char *sjis_each(unsigned char *p)
+static char *sjis_each(unsigned char *p, unsigned char *end)
 {
-	if(isend_string(p) == JCSTRING_TRUE)
+	if( ((end != NULL) && (p >= end)) || ((end == NULL) && (isend_string(p) == JCSTRING_TRUE)) )
 	{
 		return NULL;
 	}
@@ -39,12 +39,10 @@ static char *sjis_each(unsigned char *p)
 	{
 		p++;
 	}
-	else if((*p >= 0x81 && *p <= 0x9F) || (*p >= 0xE0 && *p <= 0xFC))
+	else if( ((end == NULL) || ((end != NULL) && ((p+1) <= end))) && ((*p >= 0x81 && *p <= 0x9F) || (*p >= 0xE0 && *p <= 0xFC)) && 
+		((*(p+1) >= 0x40 && *(p+1) <= 0x7E) || (*(p+1) >= 0x80 && *(p+1) <= 0xFC)) )
 	{
-		if((*(p+1) >= 0x40 && *(p+1) <= 0x7E) || (*(p+1) >= 0x80 && *(p+1) <= 0xFC))
-		{
-			p+=2;
-		}
+		p+=2;
 	}
 	else
 	{
@@ -117,7 +115,7 @@ static int encconv_sjis_to_utf8(unsigned char *p, JCString_exec_info *info)
 		return count;
 	}
 
-	count = JCString_StrLen((const char *)convvalue, JCString_Get_UTF8Each());
+	count = JCString_StrByteLen((const char *)convvalue, JCString_Get_UTF8Each());
 
 	if((info->data.convert_data.count + count) > info->data.convert_data.size)
 	{

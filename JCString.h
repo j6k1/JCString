@@ -59,7 +59,7 @@ typedef struct {
 	size_t length;
 	char * value;
 } JCString_String;
-typedef char * (*JCString_Each)(unsigned char *p);
+typedef char * (*JCString_Each)(unsigned char *p, unsigned char *end);
 typedef JCSTRING_BOOL (*JCString_IsEnd_String)(unsigned char *p);
 typedef int (*JCString_ConvertEncode)(unsigned char *p, JCString_exec_info *info);
 
@@ -67,7 +67,7 @@ extern const JCString_conv_table JCString_sjis_to_utf8_conv_table[];
 extern size_t JCString_sjis_to_utf8_conv_table_size;
 
 void JCString_DebugLog(char file[], int line, char format[], ...);
-size_t JCString_StrLen(const char *p, JCString_Each string_each_func);
+size_t JCString_StrByteLen(const char *p, JCString_Each string_each_func);
 void * JCString_Malloc(size_t size, char file[], int line);
 int JCString_Realloc(void **p, size_t size, char file[], int line);
 int JCString_Free(void *p, char file[], int line);

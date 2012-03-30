@@ -17,9 +17,9 @@ static JCSTRING_BOOL isend_string(unsigned char *p)
 		return JCSTRING_FALSE;
 	}
 }
-static char *utf8_each(unsigned char *p)
+static char *utf8_each(unsigned char *p, unsigned char *end)
 {
-	if(isend_string(p) == JCSTRING_TRUE)
+	if( ((end != NULL) && (p >= end)) || ((end == NULL) && (isend_string(p) == JCSTRING_TRUE)) )
 	{
 		return NULL;
 	}
@@ -28,15 +28,18 @@ static char *utf8_each(unsigned char *p)
 	{
 		p++;
 	}
-	else if((*p >= 0xC0 && *p <= 0xDF) && (*(p+1) >= 0x80 && *(p+1) <= 0xBF))
+	else if( ((end == NULL) || ((end != NULL) && ((p+1) <= end))) && 
+		((end != NULL) && (p+1 <= end)) && (*p >= 0xC0 && *p <= 0xDF) && (*(p+1) >= 0x80 && *(p+1) <= 0xBF) )
 	{
 		p+=2;
 	}
-	else if((*p >= 0xE0 && *p <= 0xEF) && (*(p+1) >= 0x80 && *(p+1) <= 0xBF) && (*(p+2) >= 0x80 && *(p+2) <= 0xBF))
+	else if( ((end == NULL) || ((end != NULL) && ((p+2) <= end))) && 
+		(*p >= 0xE0 && *p <= 0xEF) && (*(p+1) >= 0x80 && *(p+1) <= 0xBF) && (*(p+2) >= 0x80 && *(p+2) <= 0xBF) )
 	{
 		p+=3;
 	}
-	else if((*p >= 0xF0 && *p <= 0xF7) && (*(p+1) >= 0x80 && *(p+1) <= 0xBF) && 
+	else if( ((end == NULL) || ((end != NULL) && ((p+3) <= end))) &&
+		(*p >= 0xF0 && *p <= 0xF7) && (*(p+1) >= 0x80 && *(p+1) <= 0xBF) && 
 		(*(p+2) >= 0x80 && *(p+2) <= 0xBF) && (*(p+3) >= 0x80 && *(p+3) <= 0xBF))
 	{
 		p+=4;

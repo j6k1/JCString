@@ -274,14 +274,14 @@ static void JCString_DebugLog(char file[], int line, char format[], ...)
 
 	return ;
 }
-size_t JCString_StrLen(const char *p, JCString_Each string_each_func)
+size_t JCString_StrByteLen(const char *p, JCString_Each string_each_func)
 {
 	unsigned char *it = NULL;
 	unsigned char *end = NULL;
 	
 	it = (unsigned char *)p;	
 
-	for(end = it; (it = (unsigned char *)string_each_func(it)) != NULL; end = it);
+	for(end = it; (it = (unsigned char *)string_each_func(it, NULL)) != NULL; end = it);
 
 	return end - (unsigned char *)p;
 }
@@ -454,7 +454,7 @@ unsigned char *JCString_GetHashValue(JCString_conv_table_hash *hashtable, size_t
 		return NULL;
 	}
 
-	while((keylen != JCString_StrLen(hashentry->key, string_each_func)) || strncmp((const char *)key, (const char *)hashentry->key, keylen) != 0)
+	while((keylen != JCString_StrByteLen(hashentry->key, string_each_func)) || strncmp((const char *)key, (const char *)hashentry->key, keylen) != 0)
 	{
 		if(hashentry->next == NULL)
 		{
@@ -488,7 +488,7 @@ JCString_conv_table_hash *JCString_GenConvTableHash(const JCString_conv_table ta
 		key = (char *)&(table[i].key[0]);
 		val = (char *)&(table[i].val[0]);
 
-		len = JCString_StrLen(key, string_each_func);
+		len = JCString_StrByteLen(key, string_each_func);
 
 		hash = get_table_hash((unsigned char *)key, len, hashtable_size);
 
@@ -534,7 +534,7 @@ JCString_conv_table_hash *JCString_GenConvInvertedTableHash(const JCString_conv_
 		val = (char *)&(table[i].val[0]);
 
 		/* 本関数では、キーと値を逆にしてハッシュを生成するため、val（値）の長さを求める。*/
-		len = JCString_StrLen(val, string_each_func);
+		len = JCString_StrByteLen(val, string_each_func);
 
 		/* 本関数では、キーと値を逆にしてハッシュを生成するため、val（値）を元にハッシュを生成する。 */
 		hash = get_table_hash((unsigned char *)val, len, hashtable_size);
@@ -581,7 +581,8 @@ JCString_String JCString_ConvEncoding(JCString_String str,
 			return result;
 		}
 
-		len = JCString_StrLen((const char *)str.value, string_each_func) * 2;
+		len = JCString_StrByteLen((const char *)str.value, string_each_func) * 2;
+		end = (p + (JCString_StrByteLen((const char *)str.value, string_each_func))) - 1;
 	}
 	else if(str.use_length != JCSTRING_TRUE)
 	{
@@ -616,18 +617,13 @@ JCString_String JCString_ConvEncoding(JCString_String str,
 
 	do
 	{
-		if(isstrend_func(p) == JCSTRING_TRUE)
-		{
-			break;
-		}
-
 		info.data.convert_data.count += convfunc(p, &info);
 
 		if(info.header.exit == 1)
 		{
 			return result;
 		}
-	}while((p = (unsigned char*)string_each_func(p)) != NULL);
+	}while((p = (unsigned char*)string_each_func(p, end)) != NULL);
 
 	info.data.convert_data.buff[info.data.convert_data.count] = '\0';
 	result.length = info.data.convert_data.count;
