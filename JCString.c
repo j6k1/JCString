@@ -29,7 +29,7 @@ static int get_memaddr_table_hash(void *p)
 		h = multipliter * h + ((long)tmp & 0xFF);
 		tmp = (void *)((long)(tmp) >> 8);
 	}
-
+	
 	return h % MEMADDR_HASH_SIZE;
 }
 static int release_memaddr_hash()
@@ -275,6 +275,17 @@ static void JCString_DebugLog(char file[], int line, char format[], ...)
 
 	return ;
 }
+size_t JCString_StrLen(const char *p, JCString_Each string_each_func)
+{
+	unsigned char *it = NULL;
+	unsigned char *end = NULL;
+	
+	it = (unsigned char *)p;	
+
+	for(end = it; (it = (unsigned char *)string_each_func(it)) != NULL; end = it);
+
+	return end - (unsigned char *)p;
+}
 void * JCString_Malloc(size_t size, char file[], int line)
 {
 	void * p = NULL;
@@ -380,15 +391,16 @@ int JCString_Free(void *p, char file[], int line)
 int JCString_Realloc(void **p, size_t size, char file[], int line)
 {
 	void *tmp;
+	JCString_allocated_memory_list *entry = NULL;
 	JCString_allocated_memory_hash *hashentry = NULL;
 	int hash = 0;
 
-	hash = get_memaddr_table_hash(p);
+	hash = get_memaddr_table_hash(*p);
 	hashentry = &allocated_memory_hash[hash];
 
-	if(hashentry->p != p)
+	if(hashentry->p != *p)
 	{
-		while(hashentry->p != p)
+		while(hashentry->p != *p)
 		{
 			if(hashentry->next == NULL)
 			{
@@ -407,15 +419,30 @@ int JCString_Realloc(void **p, size_t size, char file[], int line)
 		return -1;
 	}
 
-	JCString_DebugLog(file, line, "Memory reallocate success");
+	entry = hashentry->listentry;
+
+	if(remove_memaddr_hash(*p) == -1)
+	{
+		JCString_DebugLog( __FILE__, __LINE__, "Allocated memory hash entry remove failed!!");
+		free(tmp);
+		return -1;
+	}
+
+	if(set_memaddr_hash(tmp, entry) == -1)
+	{
+		free(tmp);
+		return -1;
+	}
 
 	*p = tmp;
-	hashentry->p = p;
-	hashentry->listentry->p = p;
+	entry->p = *p;
+
+	JCString_DebugLog(file, line, "Memory reallocate success");
 	
 	return 1;
 }
-unsigned char *JCString_GetHashValue(JCString_conv_table_hash *hashtable, size_t hashtable_size, unsigned char *key, int keylen)
+unsigned char *JCString_GetHashValue(JCString_conv_table_hash *hashtable, size_t hashtable_size, unsigned char *key, int keylen, 
+	JCString_Each string_each_func)
 {
 	int hashkey = 0;
 	JCString_conv_table_hash *hashentry = NULL;
@@ -428,7 +455,7 @@ unsigned char *JCString_GetHashValue(JCString_conv_table_hash *hashtable, size_t
 		return NULL;
 	}
 
-	while((keylen != strlen(hashentry->key)) || strncmp((const char *)key, (const char *)hashentry->key, keylen) != 0)
+	while((keylen != JCString_StrLen(hashentry->key, string_each_func)) || strncmp((const char *)key, (const char *)hashentry->key, keylen) != 0)
 	{
 		if(hashentry->next == NULL)
 		{
@@ -440,7 +467,8 @@ unsigned char *JCString_GetHashValue(JCString_conv_table_hash *hashtable, size_t
 	
 	return hashentry->val;
 }
-JCString_conv_table_hash *JCString_GenConvTableHash(const JCString_conv_table table[], size_t table_size, size_t hashtable_size)
+JCString_conv_table_hash *JCString_GenConvTableHash(const JCString_conv_table table[], size_t table_size, size_t hashtable_size,
+	JCString_Each string_each_func)
 {
 	int count = 0;
 	int i=0;
@@ -461,9 +489,9 @@ JCString_conv_table_hash *JCString_GenConvTableHash(const JCString_conv_table ta
 		key = (char *)&(table[i].key[0]);
 		val = (char *)&(table[i].val[0]);
 
-		for(len=0; key[len] != '\0'; len++);
+		len = JCString_StrLen(key, string_each_func);
 
-		hash = get_table_hash(key, len, hashtable_size);
+		hash = get_table_hash((unsigned char *)key, len, hashtable_size);
 
 		hashentry = &hashtable[hash];
 
@@ -484,7 +512,8 @@ JCString_conv_table_hash *JCString_GenConvTableHash(const JCString_conv_table ta
 
 	return hashtable;
 }
-JCString_conv_table_hash *JCString_GenConvInvertedTableHash(const JCString_conv_table table[], size_t table_size, size_t hashtable_size)
+JCString_conv_table_hash *JCString_GenConvInvertedTableHash(const JCString_conv_table table[], size_t table_size, size_t hashtable_size,
+	JCString_Each string_each_func)
 {
 	int count = 0;
 	int i=0;
@@ -505,11 +534,11 @@ JCString_conv_table_hash *JCString_GenConvInvertedTableHash(const JCString_conv_
 		key = (char *)&(table[i].key[0]);
 		val = (char *)&(table[i].val[0]);
 
-		//本関数では、キーと値を逆にしてハッシュを生成するため、val（値）の長さを求める。
-		for(len=0; val[len] != '\0'; len++);
+		/* 本関数では、キーと値を逆にしてハッシュを生成するため、val（値）の長さを求める。*/
+		len = JCString_StrLen(val, string_each_func);
 
-		//本関数では、キーと値を逆にしてハッシュを生成するため、val（値）を元にハッシュを生成する。
-		hash = get_table_hash(val, len, hashtable_size);
+		/* 本関数では、キーと値を逆にしてハッシュを生成するため、val（値）を元にハッシュを生成する。 */
+		hash = get_table_hash((unsigned char *)val, len, hashtable_size);
 
 		hashentry = &hashtable[hash];
 
@@ -523,7 +552,7 @@ JCString_conv_table_hash *JCString_GenConvInvertedTableHash(const JCString_conv_
 			hashentry = hashentry->next;
 		}
 
-		//本関数では、キーと値を逆にしてハッシュを生成するため、val（値）とkey（キー）を逆にしてハッシュに設定する。
+		/* 本関数では、キーと値を逆にしてハッシュを生成するため、val（値）とkey（キー）を逆にしてハッシュに設定する。 */
 		hashentry->key = val;
 		hashentry->val = key;
 		hashentry->next = NULL;
@@ -531,22 +560,47 @@ JCString_conv_table_hash *JCString_GenConvInvertedTableHash(const JCString_conv_
 
 	return hashtable;
 }
-char *JCString_ConvEncoding(char str[], JCString_Each string_each_func, JCString_ConvertEncode convfunc)
+JCSTRING_String JCString_ConvEncoding(JCSTRING_String str, 
+	JCString_Each string_each_func, JCString_ConvertEncode convfunc, JCString_IsEnd_String isstrend_func)
 {
 	int len = 0;
 	unsigned char *p = NULL;
+	unsigned char *end = NULL;
 	JCString_exec_info info;
+	JCSTRING_String result;
+	memset(&result, 0x00, sizeof(JCSTRING_String));
+	result.use_length = JCSTRING_TRUE;
+
 	memset(&info, 0x00, sizeof(info));
 
-	p = (unsigned char*)str;
+	p = (unsigned char*)str.value;
 
-	len = strlen((const char *)str) * 2;
+	if(str.use_length == JCSTRING_FALSE)
+	{
+		if(isstrend_func(p) == JCSTRING_TRUE)
+		{
+			return result;
+		}
 
+		len = JCString_StrLen((const char *)str.value, string_each_func) * 2;
+	}
+	else if(str.use_length != JCSTRING_TRUE)
+	{
+		return result;
+	}
+	else if(str.length > 0)
+	{
+		end = p + str.length - 1;
+		len = str.length * 2;
+	}
+	else
+	{
+		return result;
+	}
+	
 	if(len <= 0)
 	{
-		info.data.convert_data.buff = (unsigned char *)JCString_Malloc(1, __FILE__, __LINE__ );
-		info.data.convert_data.buff[0] = '\0';
-		return (char *)info.data.convert_data.buff;
+		return result;
 	}
 
 	info.data.convert_data.buff = (unsigned char *)JCString_Malloc(len, __FILE__, __LINE__ );
@@ -561,19 +615,10 @@ char *JCString_ConvEncoding(char str[], JCString_Each string_each_func, JCString
 
 	memset(info.data.convert_data.buff, 0x00, len);
 
-	while((p = (unsigned char*)string_each_func(p)) != NULL)
+	do
 	{
-		if(*p == '\0')
+		if(isstrend_func(p) == JCSTRING_TRUE)
 		{
-			if((info.data.convert_data.count) >= info.data.convert_data.size)	
-			{
-				if(JCString_Realloc((void **)(&info.data.convert_data.buff), info.data.convert_data.size + 1, __FILE__, __LINE__ ) == -1)
-				{
-					return NULL;
-				}
-			}
-		
-			info.data.convert_data.buff[info.data.convert_data.count] = '\0';
 			break;
 		}
 
@@ -581,12 +626,15 @@ char *JCString_ConvEncoding(char str[], JCString_Each string_each_func, JCString
 
 		if(info.header.exit == 1)
 		{
-			return NULL;
+			return result;
 		}
-	}
+	}while((p = (unsigned char*)string_each_func(p)) != NULL);
 
-	return info.data.convert_data.buff;
+	info.data.convert_data.buff[info.data.convert_data.count] = '\0';
+	result.length = info.data.convert_data.count;
+	result.value = (char *)info.data.convert_data.buff;
 
+	return result;
 }
 int JCString_Release()
 {
