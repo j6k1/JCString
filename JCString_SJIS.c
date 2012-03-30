@@ -147,7 +147,7 @@ static JCSTRING_BOOL isend_string(unsigned char *p)
 }
 JCString_String JCString_SjisWinToUTF8(JCString_String str, JCSTRING_ERR *err)
 {
-	return JCString_ConvEncoding(str, string_each, encconv_sjis_win_to_utf8, isend_string, err);
+	return JCString_ConvEncodingCommon(str, string_each, encconv_sjis_win_to_utf8, isend_string, err);
 }
 JCString_Each JCString_Get_SJISEach()
 {

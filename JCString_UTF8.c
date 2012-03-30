@@ -162,7 +162,7 @@ static int encconv_sjis_win_to_utf8(unsigned char *p, unsigned char *end, JCStri
 }
 JCString_String JCString_UTF8ToSJISWin(JCString_String str, JCSTRING_ERR *err)
 {
-	return JCString_ConvEncoding(str, string_each, encconv_sjis_win_to_utf8, isend_string, err);
+	return JCString_ConvEncodingCommon(str, string_each, encconv_sjis_win_to_utf8, isend_string, err);
 }
 JCString_Each JCString_Get_UTF8Each()
 {

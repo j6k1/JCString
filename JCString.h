@@ -100,10 +100,12 @@ JCSTRING_ENCODING JCString_GetInternalEncoding();
 JCSTRING_BOOL JCString_IsDefinedEncType(int encoding);
 JCString_String JCString_CreateString(char *p, JCSTRING_ENCODING encoding, JCSTRING_ERR *err);
 
-JCString_String JCString_ConvEncoding(JCString_String str, 
+JCString_String JCString_ConvEncodingCommon(JCString_String str, 
 	JCString_Each string_each_func, JCString_ConvertEncode convfunc, JCString_IsEnd_String isstrend_func, JCSTRING_ERR *err);
 JCString_String JCString_SjisWinToUTF8(JCString_String str, JCSTRING_ERR *err);
 JCString_String JCString_UTF8ToSJISWin(JCString_String str, JCSTRING_ERR *err);
+JCString_String JCString_ToSJISWin(JCString_String str, JCSTRING_ENCODING encoding, JCSTRING_ERR *err);
+JCString_String JCString_ToUTF8(JCString_String str, JCSTRING_ENCODING encoding, JCSTRING_ERR *err);
 JCString_IsEnd_String JCString_Get_SJISIsEndString();
 
 JCString_Each JCString_Get_SJISEach();

@@ -36,7 +36,7 @@ static int get_memaddr_table_hash(void *p)
 
 	h = 0;
 	tmp = p;
-	len = sizeof(long);
+	len = sizeof(p);
 
 	for(i=0; i < len ; i++)
 	{
@@ -642,6 +642,11 @@ JCString_String JCString_CreateString(char *p, JCSTRING_ENCODING encoding, JCSTR
 		return str;
 	}
 
+	if(encoding == JCSTRING_ENC_INTERNAL)
+	{
+		encoding = internal_encoding;
+	}	
+	
 	string_each_func = JCString_Get_Each(encoding);
 
 	str.use_length = JCSTRING_TRUE;
@@ -650,7 +655,7 @@ JCString_String JCString_CreateString(char *p, JCSTRING_ENCODING encoding, JCSTR
 
 	return str;
 }
-JCString_String JCString_ConvEncoding(JCString_String str, 
+JCString_String JCString_ConvEncodingCommon(JCString_String str, 
 	JCString_Each string_each_func, JCString_ConvertEncode convfunc, JCString_IsEnd_String isstrend_func, JCSTRING_ERR *err)
 {
 	int len = 0;
@@ -719,6 +724,54 @@ JCString_String JCString_ConvEncoding(JCString_String str,
 	result.value = (char *)info.data.convert_data.buff;
 
 	return result;
+}
+JCString_String JCString_ToUTF8(JCString_String str, JCSTRING_ENCODING encoding, JCSTRING_ERR *err)
+{
+	JCString_String result;
+	memset(&result, 0x00, sizeof(result));
+
+	if(JCString_IsDefinedEncType(encoding) == JCSTRING_FALSE)
+	{
+		*err = JCSTRING_ERR_PRMERR;
+	}
+	else if(encoding == JCSTRING_ENC_INTERNAL)
+	{
+		encoding = internal_encoding;
+	}
+
+	switch(encoding)
+	{
+		case JCSTRING_ENC_SJISWIN:
+			return JCString_SjisWinToUTF8(str, err);
+		break;
+		default:
+			*err = JCSTRING_ERR_PRMERR;
+			return result;
+	}
+}
+JCString_String JCString_ToSJISWin(JCString_String str, JCSTRING_ENCODING encoding, JCSTRING_ERR *err)
+{
+	JCString_String result;
+	memset(&result, 0x00, sizeof(result));
+
+	if(JCString_IsDefinedEncType(encoding) == JCSTRING_FALSE)
+	{
+		*err = JCSTRING_ERR_PRMERR;
+	}
+	else if(encoding == JCSTRING_ENC_INTERNAL)
+	{
+		encoding = internal_encoding;
+	}
+
+	switch(encoding)
+	{
+		case JCSTRING_ENC_UTF8:
+			return JCString_UTF8ToSJISWin(str, err);
+		break;
+		default:
+			*err = JCSTRING_ERR_PRMERR;
+			return result;
+	}
 }
 JCSTRING_ERR JCString_Release()
 {
