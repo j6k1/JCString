@@ -617,7 +617,7 @@ JCString_String JCString_ConvEncoding(JCString_String str,
 
 	do
 	{
-		info.data.convert_data.count += convfunc(p, &info);
+		info.data.convert_data.count += convfunc(p, end, &info);
 
 		if(info.header.exit == 1)
 		{

@@ -9,16 +9,16 @@ static size_t sjis_to_utf8_hashtable_size = 0;
 
 static char *string_each(unsigned char *p);
 static int string_charsize(unsigned char *p);
-static int encconv_sjis_to_utf8(unsigned char *p, JCString_exec_info *info);
+static int encconv_sjis_to_utf8(unsigned char *p, unsigned char *end, JCString_exec_info *info);
 static JCSTRING_BOOL isend_string(unsigned char *p);
 
-static int string_charsize(unsigned char *p)
+static int string_charsize(unsigned char *p, unsigned char *end)
 {
 	if((*p >= 0x00 && *p <= 0x7F) || (*p >= 0xA1 && *p <= 0xDF))
 	{
 		return 1;
 	}
-	else if((*p >= 0x81 && *p <= 0x9F) || (*p >= 0xE0 && *p <= 0xFC))
+	else if( ((end == NULL) || ((end != NULL) && ((p+1) <= end))) && (*p >= 0x81 && *p <= 0x9F) || (*p >= 0xE0 && *p <= 0xFC) )
 	{
 		if((*(p+1) >= 0x40 && *(p+1) <= 0x7E) || (*(p+1) >= 0x80 && *(p+1) <= 0xFC))
 		{
@@ -51,7 +51,7 @@ static char *string_each(unsigned char *p, unsigned char *end)
 
 	return (char *)p;
 }
-static int encconv_sjis_to_utf8(unsigned char *p, JCString_exec_info *info)
+static int encconv_sjis_to_utf8(unsigned char *p, unsigned char *end, JCString_exec_info *info)
 {
 	unsigned char *convvalue = NULL;
 	int len=0;
@@ -63,7 +63,7 @@ static int encconv_sjis_to_utf8(unsigned char *p, JCString_exec_info *info)
 		return 0;
 	}
 
-	if((*p >= 0x00 && *p <= 0x5B) || (*p >= 0x5D && *p <= 0x7D))
+	if( ((*p >= 0x00 && *p <= 0x5B) || (*p >= 0x5D && *p <= 0x7D)) || (string_charsize(p, end) == 0) )
 	{
 		count = 1;
 
@@ -89,7 +89,7 @@ static int encconv_sjis_to_utf8(unsigned char *p, JCString_exec_info *info)
 			string_each);
 	}
 
-	len = string_charsize(p);
+	len = string_charsize(p, end);
 
 	convvalue = JCString_GetHashValue(sjis_to_utf8_hashtable, sjis_to_utf8_hashtable_size, p, len, JCString_Get_UTF8Each());
 	

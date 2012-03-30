@@ -61,7 +61,7 @@ typedef struct {
 } JCString_String;
 typedef char * (*JCString_Each)(unsigned char *p, unsigned char *end);
 typedef JCSTRING_BOOL (*JCString_IsEnd_String)(unsigned char *p);
-typedef int (*JCString_ConvertEncode)(unsigned char *p, JCString_exec_info *info);
+typedef int (*JCString_ConvertEncode)(unsigned char *p, unsigned char *end, JCString_exec_info *info);
 
 extern const JCString_conv_table JCString_sjis_to_utf8_conv_table[];
 extern size_t JCString_sjis_to_utf8_conv_table_size;

@@ -4,7 +4,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-static char *string_each(unsigned char *p);
+static char *string_each(unsigned char *p, unsigned char *end);
 
 static JCSTRING_BOOL isend_string(unsigned char *p)
 {
