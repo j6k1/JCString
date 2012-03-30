@@ -95,6 +95,8 @@ JCString_conv_table_hash *JCString_GenConvTableHash(const JCString_conv_table ta
 JCString_conv_table_hash *JCString_GenConvInvertedTableHash(const JCString_conv_table table[], size_t table_size, size_t hashtable_size,
 	JCString_Each string_each_func);
 
+JCSTRING_ERR JCString_SetInternalEncoding(JCSTRING_ENCODING encoding);
+JCSTRING_ENCODING JCString_GetInternalEncoding();
 JCSTRING_BOOL JCString_IsDefinedEncType(int encoding);
 JCString_String JCString_CreateString(char *p, JCSTRING_ENCODING encoding, JCSTRING_ERR *err);
 

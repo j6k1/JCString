@@ -1,3 +1,12 @@
+/**
+ * JCString
+ *
+ * @package JCString - multibyte-string-library
+ * @version 0.0.2-alpha
+ * @author jinpu <http://will-co21.net>
+ * @lisence The LGPL License
+ * @copyright Copyright 2012 jinpu. All rights reserved.
+ */
 #include "JCString.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -567,6 +576,25 @@ JCString_conv_table_hash *JCString_GenConvInvertedTableHash(const JCString_conv_
 	}
 
 	return hashtable;
+}
+JCSTRING_ERR JCString_SetInternalEncoding(JCSTRING_ENCODING encoding)
+{
+	if(JCString_IsDefinedEncType(encoding) == JCSTRING_FALSE)
+	{
+		return JCSTRING_ERR_PRMERR;
+	}
+	else if(encoding == JCSTRING_ENC_INTERNAL)
+	{
+		return JCSTRING_ERR_PRMERR;
+	}
+
+	internal_encoding = encoding;
+
+	return JCSTRING_SUCCESS;
+}
+JCSTRING_ENCODING JCString_GetInternalEncoding()
+{
+	return internal_encoding;
 }
 JCSTRING_BOOL JCString_IsDefinedEncType(int encoding)
 {
