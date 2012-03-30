@@ -454,7 +454,7 @@ unsigned char *JCString_GetHashValue(JCString_conv_table_hash *hashtable, size_t
 		return NULL;
 	}
 
-	while((keylen != JCString_StrByteLen(hashentry->key, string_each_func)) || strncmp((const char *)key, (const char *)hashentry->key, keylen) != 0)
+	while((keylen != JCString_StrByteLen(hashentry->key, string_each_func)) || memcmp((const char *)key, (const char *)hashentry->key, keylen) != 0)
 	{
 		if(hashentry->next == NULL)
 		{
