@@ -50,17 +50,17 @@ struct _JCString_conv_table_hash {
 	unsigned char *val;
 	JCString_conv_table_hash * next;
 };
-enum JCSTRING_BOOL {
+typedef enum {
 	JCSTRING_FALSE = 0,
 	JCSTRING_TRUE = 1
-};
+} JCSTRING_BOOL;
 typedef struct {
-	enum JCSTRING_BOOL use_length;
+	JCSTRING_BOOL use_length;
 	size_t length;
 	char * value;
-} JCSTRING_String;
+} JCString_String;
 typedef char * (*JCString_Each)(unsigned char *p);
-typedef enum JCSTRING_BOOL (*JCString_IsEnd_String)(unsigned char *p);
+typedef JCSTRING_BOOL (*JCString_IsEnd_String)(unsigned char *p);
 typedef int (*JCString_ConvertEncode)(unsigned char *p, JCString_exec_info *info);
 
 extern const JCString_conv_table JCString_sjis_to_utf8_conv_table[];
@@ -78,9 +78,9 @@ JCString_conv_table_hash *JCString_GenConvTableHash(const JCString_conv_table ta
 	JCString_Each string_each_func);
 JCString_conv_table_hash *JCString_GenConvInvertedTableHash(const JCString_conv_table table[], size_t table_size, size_t hashtable_size,
 	JCString_Each string_each_func);
-JCSTRING_String JCString_ConvEncoding(JCSTRING_String str, 
+JCString_String JCString_ConvEncoding(JCString_String str, 
 	JCString_Each string_each_func, JCString_ConvertEncode convfunc, JCString_IsEnd_String isstrend_func);
-JCSTRING_String JCString_SjisToUTF8(JCSTRING_String str);
+JCString_String JCString_SjisToUTF8(JCString_String str);
 JCString_Each JCString_Get_UTF8Each();
 char *JCString_FileRead(FILE *fp);
 

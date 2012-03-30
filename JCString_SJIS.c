@@ -10,7 +10,7 @@ static size_t sjis_to_utf8_hashtable_size = 0;
 static char *sjis_each(unsigned char *p);
 static int sjis_charsize(unsigned char *p);
 static int encconv_sjis_to_utf8(unsigned char *p, JCString_exec_info *info);
-static enum JCSTRING_BOOL isend_string(unsigned char *p);
+static JCSTRING_BOOL isend_string(unsigned char *p);
 
 static int sjis_charsize(unsigned char *p)
 {
@@ -133,7 +133,7 @@ static int encconv_sjis_to_utf8(unsigned char *p, JCString_exec_info *info)
 
 	return count;
 }
-static enum JCSTRING_BOOL isend_string(unsigned char *p)
+static JCSTRING_BOOL isend_string(unsigned char *p)
 {
 	if(*p == '\0')
 	{
@@ -144,7 +144,7 @@ static enum JCSTRING_BOOL isend_string(unsigned char *p)
 		return JCSTRING_FALSE;
 	}
 }
-JCSTRING_String JCString_SjisToUTF8(JCSTRING_String str)
+JCString_String JCString_SjisToUTF8(JCString_String str)
 {
 	return JCString_ConvEncoding(str, sjis_each, encconv_sjis_to_utf8, isend_string);
 }

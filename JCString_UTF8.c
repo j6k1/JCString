@@ -6,7 +6,7 @@
 
 static char *utf8_each(unsigned char *p);
 
-static enum JCSTRING_BOOL isend_string(unsigned char *p)
+static JCSTRING_BOOL isend_string(unsigned char *p)
 {
 	if(*p == '\0')
 	{

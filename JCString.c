@@ -559,15 +559,15 @@ JCString_conv_table_hash *JCString_GenConvInvertedTableHash(const JCString_conv_
 
 	return hashtable;
 }
-JCSTRING_String JCString_ConvEncoding(JCSTRING_String str, 
+JCString_String JCString_ConvEncoding(JCString_String str, 
 	JCString_Each string_each_func, JCString_ConvertEncode convfunc, JCString_IsEnd_String isstrend_func)
 {
 	int len = 0;
 	unsigned char *p = NULL;
 	unsigned char *end = NULL;
 	JCString_exec_info info;
-	JCSTRING_String result;
-	memset(&result, 0x00, sizeof(JCSTRING_String));
+	JCString_String result;
+	memset(&result, 0x00, sizeof(JCString_String));
 	result.use_length = JCSTRING_TRUE;
 
 	memset(&info, 0x00, sizeof(info));
