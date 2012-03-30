@@ -4,7 +4,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-static char *utf8_each(unsigned char *p);
+static char *string_each(unsigned char *p);
 
 static JCSTRING_BOOL isend_string(unsigned char *p)
 {
@@ -17,7 +17,7 @@ static JCSTRING_BOOL isend_string(unsigned char *p)
 		return JCSTRING_FALSE;
 	}
 }
-static char *utf8_each(unsigned char *p, unsigned char *end)
+static char *string_each(unsigned char *p, unsigned char *end)
 {
 	if( ((end != NULL) && (p >= end)) || ((end == NULL) && (isend_string(p) == JCSTRING_TRUE)) )
 	{
@@ -53,5 +53,5 @@ static char *utf8_each(unsigned char *p, unsigned char *end)
 }
 JCString_Each JCString_Get_UTF8Each()
 {
-	return utf8_each;
+	return string_each;
 }
