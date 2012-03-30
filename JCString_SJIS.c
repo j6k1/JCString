@@ -4,12 +4,12 @@
 #include <stdarg.h>
 #include <string.h>
 
-static JCString_conv_table_hash *sjis_to_utf8_hashtable = NULL;
-static size_t sjis_to_utf8_hashtable_size = 0;
+static JCString_conv_table_hash *sjiswin_to_utf8_hashtable = NULL;
+static size_t sjiswin_to_utf8_hashtable_size = 0;
 
-static char *string_each(unsigned char *p);
-static int string_charsize(unsigned char *p);
-static int encconv_sjis_to_utf8(unsigned char *p, unsigned char *end, JCString_exec_info *info);
+static char *string_each(unsigned char *p, unsigned char *end);
+static int string_charsize(unsigned char *p, unsigned char *end);
+static int encconv_sjis_win_to_utf8(unsigned char *p, unsigned char *end, JCString_exec_info *info);
 static JCSTRING_BOOL isend_string(unsigned char *p);
 
 static int string_charsize(unsigned char *p, unsigned char *end)
@@ -51,7 +51,7 @@ static char *string_each(unsigned char *p, unsigned char *end)
 
 	return (char *)p;
 }
-static int encconv_sjis_to_utf8(unsigned char *p, unsigned char *end, JCString_exec_info *info)
+static int encconv_sjis_win_to_utf8(unsigned char *p, unsigned char *end, JCString_exec_info *info)
 {
 	unsigned char *convvalue = NULL;
 	int len=0;
@@ -69,9 +69,10 @@ static int encconv_sjis_to_utf8(unsigned char *p, unsigned char *end, JCString_e
 
 		if((info->data.convert_data.count + count) > info->data.convert_data.size)
 		{
-			if(JCString_Realloc((void **)(&info->data.convert_data.buff), info->data.convert_data.size * 2, __FILE__, __LINE__ ) == -1)
+			if(JCString_Realloc((void **)(&info->data.convert_data.buff), info->data.convert_data.size * 2, __FILE__, __LINE__ ) != JCSTRING_SUCCESS)
 			{
 				info->header.exit = 1;
+				info->header.err = JCSTRING_ERR_BAD_ALLOC;
 				return 0;
 			}
 			info->data.convert_data.size = info->data.convert_data.size * 2;
@@ -81,17 +82,17 @@ static int encconv_sjis_to_utf8(unsigned char *p, unsigned char *end, JCString_e
 		return count;
 	}
 
-	sjis_to_utf8_hashtable_size = ((JCString_sjis_to_utf8_conv_table_size / sizeof(JCString_conv_table)) * 5);
+	sjiswin_to_utf8_hashtable_size = ((JCString_sjis_to_utf8_conv_table_size / sizeof(JCString_conv_table)) * 5);
 
-	if(sjis_to_utf8_hashtable == NULL)
+	if(sjiswin_to_utf8_hashtable == NULL)
 	{
-		sjis_to_utf8_hashtable = JCString_GenConvTableHash(JCString_sjis_to_utf8_conv_table, JCString_sjis_to_utf8_conv_table_size, sjis_to_utf8_hashtable_size,
+		sjiswin_to_utf8_hashtable = JCString_GenConvTableHash(JCString_sjis_to_utf8_conv_table, JCString_sjis_to_utf8_conv_table_size, sjiswin_to_utf8_hashtable_size,
 			string_each);
 	}
 
 	len = string_charsize(p, end);
 
-	convvalue = JCString_GetHashValue(sjis_to_utf8_hashtable, sjis_to_utf8_hashtable_size, p, len, JCString_Get_UTF8Each());
+	convvalue = JCString_GetHashValue(sjiswin_to_utf8_hashtable, sjiswin_to_utf8_hashtable_size, p, len, JCString_Get_UTF8Each());
 	
 	
 	if(convvalue == NULL)
@@ -102,9 +103,10 @@ static int encconv_sjis_to_utf8(unsigned char *p, unsigned char *end, JCString_e
 
 			if((info->data.convert_data.count + count) > info->data.convert_data.size)
 			{
-				if(JCString_Realloc((void **)(&info->data.convert_data.buff), info->data.convert_data.size * 2, __FILE__, __LINE__ ) == -1)
+				if(JCString_Realloc((void **)(&info->data.convert_data.buff), info->data.convert_data.size * 2, __FILE__, __LINE__ ) != JCSTRING_SUCCESS)
 				{
 					info->header.exit = 1;
+					info->header.err = JCSTRING_ERR_BAD_ALLOC;
 					return 0;
 				}
 				info->data.convert_data.size = info->data.convert_data.size * 2;
@@ -119,9 +121,10 @@ static int encconv_sjis_to_utf8(unsigned char *p, unsigned char *end, JCString_e
 
 	if((info->data.convert_data.count + count) > info->data.convert_data.size)
 	{
-		if(JCString_Realloc((void **)(&info->data.convert_data.buff), info->data.convert_data.size * 2, __FILE__, __LINE__ ) == -1)
+		if(JCString_Realloc((void **)(&info->data.convert_data.buff), info->data.convert_data.size * 2, __FILE__, __LINE__ ) != JCSTRING_SUCCESS)
 		{
 			info->header.exit = 1;
+			info->header.err = JCSTRING_ERR_BAD_ALLOC;
 			return 0;
 		}
 		info->data.convert_data.size = info->data.convert_data.size * 2;
@@ -142,8 +145,16 @@ static JCSTRING_BOOL isend_string(unsigned char *p)
 		return JCSTRING_FALSE;
 	}
 }
-JCString_String JCString_SjisToUTF8(JCString_String str)
+JCString_String JCString_SjisWinToUTF8(JCString_String str, JCSTRING_ERR *err)
 {
-	return JCString_ConvEncoding(str, string_each, encconv_sjis_to_utf8, isend_string);
+	return JCString_ConvEncoding(str, string_each, encconv_sjis_win_to_utf8, isend_string, err);
+}
+JCString_Each JCString_Get_SJISEach()
+{
+	return string_each;
+}
+JCString_IsEnd_String JCString_Get_SJISIsEndString()
+{
+	return isend_string;
 }
 

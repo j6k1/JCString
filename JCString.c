@@ -8,8 +8,14 @@ static int alloc_count = 0;
 static JCString_allocated_memory_list * allocated_memory_list = NULL;
 static JCString_allocated_memory_hash * allocated_memory_hash = NULL;
 
-static int remove_memaddr_hash(void *p);
+static JCSTRING_ERR release_memaddr_hash();
+static JCSTRING_ERR set_memaddr_hash(void *p, JCString_allocated_memory_list *entry);
+static JCSTRING_ERR remove_memaddr_hash(void *p);
+static JCSTRING_ERR release_memaddr_list();
+
 static int get_table_hash(unsigned char *key,  unsigned int keylen, size_t hashtable_size);
+
+static JCSTRING_ENCODING internal_encoding = JCSTRING_ENC_UTF8;
 
 static int get_memaddr_table_hash(void *p)
 {
@@ -31,18 +37,19 @@ static int get_memaddr_table_hash(void *p)
 	
 	return h % MEMADDR_HASH_SIZE;
 }
-static int release_memaddr_hash()
+static JCSTRING_ERR release_memaddr_hash()
 {
 	JCString_allocated_memory_list *entry = NULL;
 
 	if(allocated_memory_list == NULL)
 	{
-		return 1;
+		return JCSTRING_SUCCESS;
 	}
 
 	entry = allocated_memory_list;
 
 	remove_memaddr_hash(entry->p);
+
 	free(entry->p);
 	alloc_count--;
 
@@ -60,9 +67,9 @@ static int release_memaddr_hash()
 		JCString_DebugLog( __FILE__, __LINE__, "Allocated memory count is %d", alloc_count);
 	}
 
-	return 1;
+	return JCSTRING_SUCCESS;
 }
-static int set_memaddr_hash(void *p, JCString_allocated_memory_list *entry)
+static JCSTRING_ERR set_memaddr_hash(void *p, JCString_allocated_memory_list *entry)
 {
 	int hash = 0;
 	JCString_allocated_memory_hash *hashentry = NULL;
@@ -70,7 +77,7 @@ static int set_memaddr_hash(void *p, JCString_allocated_memory_list *entry)
 	if(allocated_memory_hash == NULL)
 	{
 		JCString_DebugLog( __FILE__, __LINE__ , "Allocated memory hash is null!!"); 
-		return -1;
+		return JCSTRING_ERR_SYSTEMERR;
 	}
 
 	hash = get_memaddr_table_hash(p);
@@ -88,7 +95,7 @@ static int set_memaddr_hash(void *p, JCString_allocated_memory_list *entry)
 		if(hashentry == NULL)
 		{
 			JCString_DebugLog( __FILE__, __LINE__ , "Allocation failure of entries in the hash of the allocated memory!!");
-			return -1;
+			return JCSTRING_ERR_BAD_ALLOC;
 		}
 
 		alloc_count++;
@@ -101,9 +108,9 @@ static int set_memaddr_hash(void *p, JCString_allocated_memory_list *entry)
 	hashentry->p = p;
 	hashentry->listentry = entry;
 
-	return 1;
+	return JCSTRING_SUCCESS;
 }
-static int remove_memaddr_hash(void *p)
+static JCSTRING_ERR remove_memaddr_hash(void *p)
 {
 	int hash = 0;
 
@@ -114,7 +121,7 @@ static int remove_memaddr_hash(void *p)
 	if(allocated_memory_hash == NULL)
 	{
 		JCString_DebugLog( __FILE__, __LINE__ , "Allocated memory hash is null!!"); 
-		return -1;
+		return JCSTRING_ERR_SYSTEMERR;
 	}
 
 	hash = get_memaddr_table_hash(p);
@@ -129,7 +136,7 @@ static int remove_memaddr_hash(void *p)
 			if(entry->next == NULL)
 			{
 				JCString_DebugLog( __FILE__, __LINE__ , "Entry of the allocated memory can not be found in the hash table!!"); 
-				return -1;
+				return JCSTRING_ERR_SYSTEMERR;
 			}
 
 			prev = &allocated_memory_hash[hash];
@@ -158,15 +165,15 @@ static int remove_memaddr_hash(void *p)
 		memset((void *)&allocated_memory_hash[hash], 0x00, sizeof(JCString_allocated_memory_hash));
 	}
 
-	return 1;
+	return JCSTRING_SUCCESS;
 }
-static int release_memaddr_list()
+static JCSTRING_ERR release_memaddr_list()
 {
 	JCString_allocated_memory_list *entry = NULL;
 
 	if(allocated_memory_list == NULL)
 	{
-		return 1;
+		return JCSTRING_SUCCESS;
 	}
 
 	entry = allocated_memory_list;
@@ -190,9 +197,9 @@ static int release_memaddr_list()
 	JCString_DebugLog( __FILE__, __LINE__ , "Success to remove the list entry of the allocated memory!!");
 	JCString_DebugLog( __FILE__, __LINE__ , "Allocated memory count is %d", alloc_count);
 
-	return 1;
+	return JCSTRING_SUCCESS;
 }
-static int add_memaddr_list(JCString_allocated_memory_list *entry)
+static JCSTRING_ERR add_memaddr_list(JCString_allocated_memory_list *entry)
 {
 	if(allocated_memory_list == NULL)
 	{
@@ -206,14 +213,14 @@ static int add_memaddr_list(JCString_allocated_memory_list *entry)
 		allocated_memory_list = entry;
 	}
 
-	return 1;
+	return JCSTRING_SUCCESS;
 }
-static int remove_memaddr_list(JCString_allocated_memory_list *entry)
+static JCSTRING_ERR remove_memaddr_list(JCString_allocated_memory_list *entry)
 {
 	if(allocated_memory_list == NULL)
 	{
 		JCString_DebugLog( __FILE__, __LINE__ , "Allocated memory list is null!!"); 
-		return -1;
+		return JCSTRING_ERR_SYSTEMERR;
 	}
 
 	if((entry->prev == NULL) && (entry->next == NULL))
@@ -241,7 +248,7 @@ static int remove_memaddr_list(JCString_allocated_memory_list *entry)
 	JCString_DebugLog( __FILE__, __LINE__ , "Success to remove the list entry of the allocated memory!!");
 	JCString_DebugLog( __FILE__, __LINE__ , "Allocated memory count is %d", alloc_count);
 
-	return 1;
+	return JCSTRING_SUCCESS;
 }
 static int get_table_hash(unsigned char *key,  unsigned int keylen, size_t hashtable_size)
 {
@@ -262,6 +269,7 @@ static int get_table_hash(unsigned char *key,  unsigned int keylen, size_t hasht
 }
 static void JCString_DebugLog(char file[], int line, char format[], ...)
 {
+#ifdef JCSTRING_DEBUG
 	va_list ap;
 	va_start(ap, format);
 
@@ -271,7 +279,7 @@ static void JCString_DebugLog(char file[], int line, char format[], ...)
 	printf("\n");
 
 	va_end(ap);
-
+#endif
 	return ;
 }
 size_t JCString_StrByteLen(const char *p, JCString_Each string_each_func)
@@ -328,7 +336,7 @@ void * JCString_Malloc(size_t size, char file[], int line)
 		return NULL;
 	}
 	
-	if(set_memaddr_hash(p, entry) == -1)
+	if(set_memaddr_hash(p, entry) != JCSTRING_SUCCESS)
 	{
 		free(p);
 		return NULL;
@@ -344,7 +352,7 @@ void * JCString_Malloc(size_t size, char file[], int line)
 
 	return p;
 }
-int JCString_Free(void *p, char file[], int line)
+JCSTRING_ERR JCString_Free(void *p, char file[], int line)
 {
 	JCString_allocated_memory_list *entry = NULL;
 	JCString_allocated_memory_hash *hashentry = NULL;
@@ -368,12 +376,12 @@ int JCString_Free(void *p, char file[], int line)
 	
 	entry = hashentry->listentry;
 
-	if(remove_memaddr_list(entry) == -1)
+	if(remove_memaddr_list(entry) != JCSTRING_SUCCESS)
 	{
 		JCString_DebugLog( __FILE__, __LINE__, "Allocated memory list entry remove failed!!");
 	}
 
-	if(remove_memaddr_hash(p) == -1)
+	if(remove_memaddr_hash(p) != JCSTRING_SUCCESS)
 	{
 		JCString_DebugLog( __FILE__, __LINE__, "Allocated memory hash entry remove failed!!");
 	}
@@ -385,11 +393,12 @@ int JCString_Free(void *p, char file[], int line)
 	JCString_DebugLog(file, line, "Memory free success");
 	JCString_DebugLog(file, line, "Allocated memory count is %d", alloc_count);
 
-	return 1;
+	return JCSTRING_SUCCESS;
 }
-int JCString_Realloc(void **p, size_t size, char file[], int line)
+JCSTRING_ERR JCString_Realloc(void **p, size_t size, char file[], int line)
 {
 	void *tmp;
+	JCSTRING_ERR ret = JCSTRING_ERR_NONE;
 	JCString_allocated_memory_list *entry = NULL;
 	JCString_allocated_memory_hash *hashentry = NULL;
 	int hash = 0;
@@ -415,22 +424,22 @@ int JCString_Realloc(void **p, size_t size, char file[], int line)
 	if(tmp == NULL)
 	{
 		JCString_DebugLog(file, line, "Memory allocate failed!!");
-		return -1;
+		return JCSTRING_ERR_BAD_ALLOC;
 	}
 
 	entry = hashentry->listentry;
 
-	if(remove_memaddr_hash(*p) == -1)
+	if(remove_memaddr_hash(*p) != JCSTRING_SUCCESS)
 	{
 		JCString_DebugLog( __FILE__, __LINE__, "Allocated memory hash entry remove failed!!");
 		free(tmp);
-		return -1;
+		return JCSTRING_ERR_SYSTEMERR;
 	}
 
-	if(set_memaddr_hash(tmp, entry) == -1)
+	if((ret = set_memaddr_hash(tmp, entry)) != JCSTRING_SUCCESS)
 	{
 		free(tmp);
-		return -1;
+		return ret;
 	}
 
 	*p = tmp;
@@ -438,7 +447,7 @@ int JCString_Realloc(void **p, size_t size, char file[], int line)
 
 	JCString_DebugLog(file, line, "Memory reallocate success");
 	
-	return 1;
+	return JCSTRING_SUCCESS;
 }
 unsigned char *JCString_GetHashValue(JCString_conv_table_hash *hashtable, size_t hashtable_size, unsigned char *key, int keylen, 
 	JCString_Each string_each_func)
@@ -559,8 +568,62 @@ JCString_conv_table_hash *JCString_GenConvInvertedTableHash(const JCString_conv_
 
 	return hashtable;
 }
+JCSTRING_BOOL JCString_IsDefinedEncType(int encoding)
+{
+	if(encoding >= JCSTRING_ENC_END)
+	{
+		return JCSTRING_FALSE;
+	}
+
+	return JCSTRING_TRUE;
+}
+JCString_Each JCString_Get_Each(JCSTRING_ENCODING encoding)
+{
+	switch(encoding)
+	{
+		case JCSTRING_ENC_INTERNAL:
+			if(internal_encoding == JCSTRING_ENC_INTERNAL)
+			{
+				return NULL;
+			}
+			else
+			{
+				return JCString_Get_Each(internal_encoding);
+			}
+		case JCSTRING_ENC_SJIS:
+		case JCSTRING_ENC_SJISWIN:
+			return JCString_Get_SJISEach();
+			break;
+		case JCSTRING_ENC_UTF8:
+			return JCString_Get_UTF8Each();
+			break;
+		default:
+			return NULL;
+	}
+}
+JCString_String JCString_CreateString(char *p, JCSTRING_ENCODING encoding, JCSTRING_ERR *err)
+{
+	JCString_String str;
+	JCString_Each string_each_func = NULL;
+
+	memset(&str, 0x00, sizeof(str));
+
+	if(JCString_IsDefinedEncType(encoding) == JCSTRING_FALSE)
+	{
+		*err = JCSTRING_ERR_PRMERR;
+		return str;
+	}
+
+	string_each_func = JCString_Get_Each(encoding);
+
+	str.use_length = JCSTRING_TRUE;
+	str.length = JCString_StrByteLen((const char *)p, string_each_func);
+	str.value = p;
+
+	return str;
+}
 JCString_String JCString_ConvEncoding(JCString_String str, 
-	JCString_Each string_each_func, JCString_ConvertEncode convfunc, JCString_IsEnd_String isstrend_func)
+	JCString_Each string_each_func, JCString_ConvertEncode convfunc, JCString_IsEnd_String isstrend_func, JCSTRING_ERR *err)
 {
 	int len = 0;
 	unsigned char *p = NULL;
@@ -586,6 +649,7 @@ JCString_String JCString_ConvEncoding(JCString_String str,
 	}
 	else if(str.use_length != JCSTRING_TRUE)
 	{
+		*err = JCSTRING_ERR_PRMERR;
 		return result;
 	}
 	else if(str.length > 0)
@@ -595,14 +659,10 @@ JCString_String JCString_ConvEncoding(JCString_String str,
 	}
 	else
 	{
+		*err = JCSTRING_ERR_PRMERR;
 		return result;
 	}
 	
-	if(len <= 0)
-	{
-		return result;
-	}
-
 	info.data.convert_data.buff = (unsigned char *)JCString_Malloc(len, __FILE__, __LINE__ );
 	info.data.convert_data.size = len;
 	memset(info.data.convert_data.buff, 0x00, len);
@@ -621,6 +681,7 @@ JCString_String JCString_ConvEncoding(JCString_String str,
 
 		if(info.header.exit == 1)
 		{
+			*err = info.header.err;
 			return result;
 		}
 	}while((p = (unsigned char*)string_each_func(p, end)) != NULL);
@@ -631,7 +692,7 @@ JCString_String JCString_ConvEncoding(JCString_String str,
 
 	return result;
 }
-int JCString_Release()
+JCSTRING_ERR JCString_Release()
 {
 	int i=0;
 	int ret=0;
@@ -644,22 +705,24 @@ int JCString_Release()
 	JCString_DebugLog( __FILE__, __LINE__ , "Success to remove the hash table of the allocated memory!!");
 	JCString_DebugLog( __FILE__, __LINE__ , "Allocated memory count is %d", alloc_count);		
 
-	return 1;
+	return JCSTRING_SUCCESS;
 }
-char * JCString_FileRead(FILE *fp)
+JCString_String JCString_CreateStringFromFile(FILE *fp, JCSTRING_ENCODING encoding, JCSTRING_ERR *err)
 {
 	char * buff;
+	JCString_String str;
 	size_t size = 0;
 
 	fseek( fp, 0, SEEK_END );
 	size = ftell( fp );
 
-	buff = (char *)JCString_Malloc(size + 1, __FILE__, __LINE__ );
+	buff = (char *)JCString_Malloc(size + 2, __FILE__, __LINE__ );
 	rewind(fp);
 	fread(buff, sizeof(char), size, fp);
 	fclose(fp);
 	buff[size] = '\0';
+	buff[size+1] = '\0';
 
-	return buff;
+	return JCString_CreateString(buff, encoding, err);
 }
 
