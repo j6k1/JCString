@@ -11,6 +11,7 @@ typedef enum {
 } JCSTRING_BOOL;
 typedef enum {
 	JCSTRING_ENC_INTERNAL = 0,
+	JCSTRING_ENC_JIS,
 	JCSTRING_ENC_SJIS,
 	JCSTRING_ENC_SJISWIN,
 	JCSTRING_ENC_UTF8,
@@ -23,6 +24,14 @@ typedef enum {
 	JCSTRING_ERR_BAD_ALLOC,
 	JCSTRING_ERR_SYSTEMERR
 } JCSTRING_ERR;
+typedef enum {
+	JCSTRING_CHAR_DEFAULT = 0,
+	JCSTRING_CHAR_ASCII,
+	JCSTRING_CHAR_ROMAN,
+	JCSTRING_CHAR_KANA,
+	JCSTRING_CHAR_KANJIOLD,
+	JCSTRING_CHAR_KANJINEW
+} JCSTRING_CHAR_MODE;
 typedef struct _JCString_allocated_memory_list JCString_allocated_memory_list;
 
 struct _JCString_allocated_memory_list {
@@ -73,9 +82,9 @@ typedef struct {
 	size_t length;
 	char * value;
 } JCString_String;
-typedef char * (*JCString_Each)(unsigned char *p, unsigned char *end);
+typedef char * (*JCString_Each)(unsigned char *p, unsigned char *end, int *mode);
 typedef JCSTRING_BOOL (*JCString_IsEnd_String)(unsigned char *p);
-typedef int (*JCString_ConvertEncode)(unsigned char *p, unsigned char *end, JCString_exec_info *info);
+typedef int (*JCString_ConvertEncode)(unsigned char *p, unsigned char *end, JCString_exec_info *info, int mode);
 
 extern const JCString_conv_table JCString_sjis_to_utf8_conv_table[];
 extern size_t JCString_sjis_to_utf8_conv_table_size;
@@ -104,6 +113,7 @@ JCString_String JCString_ConvEncodingCommon(JCString_String str,
 	JCString_Each string_each_func, JCString_ConvertEncode convfunc, JCString_IsEnd_String isstrend_func, JCSTRING_ERR *err);
 JCString_String JCString_SjisWinToUTF8(JCString_String str, JCSTRING_ERR *err);
 JCString_String JCString_UTF8ToSJISWin(JCString_String str, JCSTRING_ERR *err);
+JCString_String JCString_JISToSJIS(JCString_String str, JCSTRING_ERR *err);
 JCString_String JCString_ToSJISWin(JCString_String str, JCSTRING_ENCODING encoding, JCSTRING_ERR *err);
 JCString_String JCString_ToUTF8(JCString_String str, JCSTRING_ENCODING encoding, JCSTRING_ERR *err);
 JCString_IsEnd_String JCString_Get_SJISIsEndString();

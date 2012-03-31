@@ -295,10 +295,11 @@ size_t JCString_StrByteLen(const char *p, JCString_Each string_each_func)
 {
 	unsigned char *it = NULL;
 	unsigned char *end = NULL;
-	
+	int mode = JCSTRING_CHAR_DEFAULT;
+
 	it = (unsigned char *)p;	
 
-	for(end = it; (it = (unsigned char *)string_each_func(it, NULL)) != NULL; end = it);
+	for(end = it; (it = (unsigned char *)string_each_func(it, NULL, &mode)) != NULL; end = it);
 
 	return end - (unsigned char *)p;
 }
@@ -472,7 +473,7 @@ unsigned char *JCString_GetHashValue(JCString_conv_table_hash *hashtable, size_t
 		return NULL;
 	}
 
-	while((keylen != JCString_StrByteLen(hashentry->key, string_each_func)) || memcmp((const char *)key, (const char *)hashentry->key, keylen) != 0)
+	while((keylen != JCString_StrByteLen((const char *)hashentry->key, string_each_func)) || memcmp((const char *)key, (const char *)hashentry->key, keylen) != 0)
 	{
 		if(hashentry->next == NULL)
 		{
@@ -659,6 +660,7 @@ JCString_String JCString_ConvEncodingCommon(JCString_String str,
 	JCString_Each string_each_func, JCString_ConvertEncode convfunc, JCString_IsEnd_String isstrend_func, JCSTRING_ERR *err)
 {
 	int len = 0;
+	int mode = JCSTRING_CHAR_DEFAULT;
 	unsigned char *p = NULL;
 	unsigned char *end = NULL;
 	JCString_exec_info info;
@@ -710,14 +712,14 @@ JCString_String JCString_ConvEncodingCommon(JCString_String str,
 
 	do
 	{
-		info.data.convert_data.count += convfunc(p, end, &info);
+		info.data.convert_data.count += convfunc(p, end, &info, mode);
 
 		if(info.header.exit == 1)
 		{
 			*err = info.header.err;
 			return result;
 		}
-	}while((p = (unsigned char*)string_each_func(p, end)) != NULL);
+	}while((p = (unsigned char*)string_each_func(p, end, &mode)) != NULL);
 
 	info.data.convert_data.buff[info.data.convert_data.count] = '\0';
 	result.length = info.data.convert_data.count;
@@ -767,6 +769,9 @@ JCString_String JCString_ToSJISWin(JCString_String str, JCSTRING_ENCODING encodi
 	{
 		case JCSTRING_ENC_UTF8:
 			return JCString_UTF8ToSJISWin(str, err);
+		break;
+		case JCSTRING_ENC_JIS:
+			return JCString_JISToSJIS(str, err);
 		break;
 		default:
 			*err = JCSTRING_ERR_PRMERR;

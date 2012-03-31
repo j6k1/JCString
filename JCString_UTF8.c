@@ -5,9 +5,12 @@
 #include <string.h>
 
 static JCString_conv_table_hash *utf8_to_sjiswin_hashtable = NULL;
-static size_t utf8_to_sjiswin_hashtable_size = 0;static char *string_each(unsigned char *p, unsigned char *end);
+static size_t utf8_to_sjiswin_hashtable_size = 0;
+static int string_charsize(unsigned char *p, unsigned char *end, int mode);
+static char *string_each(unsigned char *p, unsigned char *end, int *mode);
+static int encconv_sjis_win_to_utf8(unsigned char *p, unsigned char *end, JCString_exec_info *info, int mode);
 
-static int string_charsize(unsigned char *p, unsigned char *end)
+static int string_charsize(unsigned char *p, unsigned char *end, int mode)
 {
 	if((*p >= 0x00 && *p <= 0x2E) || (*p >= 0x30 && *p <= 0x7F))
 	{
@@ -43,7 +46,7 @@ static JCSTRING_BOOL isend_string(unsigned char *p)
 		return JCSTRING_FALSE;
 	}
 }
-static char *string_each(unsigned char *p, unsigned char *end)
+static char *string_each(unsigned char *p, unsigned char *end, int *mode)
 {
 	if( ((end != NULL) && (p >= end)) || ((end == NULL) && (isend_string(p) == JCSTRING_TRUE)) )
 	{
@@ -77,7 +80,7 @@ static char *string_each(unsigned char *p, unsigned char *end)
 
 	return (char *)p;
 }
-static int encconv_sjis_win_to_utf8(unsigned char *p, unsigned char *end, JCString_exec_info *info)
+static int encconv_sjis_win_to_utf8(unsigned char *p, unsigned char *end, JCString_exec_info *info, int mode)
 {
 	unsigned char *convvalue = NULL;
 	int len=0;
@@ -89,7 +92,7 @@ static int encconv_sjis_win_to_utf8(unsigned char *p, unsigned char *end, JCStri
 		return 0;
 	}
 
-	if( ((*p >= 0x00 && *p <= 0x5B) || (*p >= 0x5D && *p <= 0x7D)) || (string_charsize(p, end) == 0) )
+	if( ((*p >= 0x00 && *p <= 0x5B) || (*p >= 0x5D && *p <= 0x7D)) || (string_charsize(p, end, mode) == 0) )
 	{
 		count = 1;
 
@@ -116,7 +119,7 @@ static int encconv_sjis_win_to_utf8(unsigned char *p, unsigned char *end, JCStri
 			string_each);
 	}
 
-	len = string_charsize(p, end);
+	len = string_charsize(p, end, mode);
 
 	convvalue = JCString_GetHashValue(utf8_to_sjiswin_hashtable, utf8_to_sjiswin_hashtable_size, p, len, JCString_Get_SJISEach());
 	
