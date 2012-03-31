@@ -751,6 +751,31 @@ JCString_String JCString_ToUTF8(JCString_String str, JCSTRING_ENCODING encoding,
 			return result;
 	}
 }
+JCString_String JCString_ToJIS(JCString_String str, JCSTRING_ENCODING encoding, JCSTRING_ERR *err)
+{
+	JCString_String result;
+	memset(&result, 0x00, sizeof(result));
+
+	if(JCString_IsDefinedEncType(encoding) == JCSTRING_FALSE)
+	{
+		*err = JCSTRING_ERR_PRMERR;
+	}
+	else if(encoding == JCSTRING_ENC_INTERNAL)
+	{
+		encoding = internal_encoding;
+	}
+
+	switch(encoding)
+	{
+		case JCSTRING_ENC_SJIS:
+		case JCSTRING_ENC_SJISWIN:
+			return JCString_SjisToJIS(str, err);
+		break;
+		default:
+			*err = JCSTRING_ERR_PRMERR;
+			return result;
+	}
+}
 JCString_String JCString_ToSJISWin(JCString_String str, JCSTRING_ENCODING encoding, JCSTRING_ERR *err)
 {
 	JCString_String result;
