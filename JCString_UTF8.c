@@ -48,7 +48,7 @@ static JCSTRING_BOOL isend_string(unsigned char *p)
 }
 static char *string_each(unsigned char *p, unsigned char *end, int *mode)
 {
-	if( ((end != NULL) && (p >= end)) || ((end == NULL) && (isend_string(p) == JCSTRING_TRUE)) )
+	if( ((end != NULL) && ((p + string_charsize(p, end, *mode)) > end)) || ((end == NULL) && (isend_string(p) == JCSTRING_TRUE)) )
 	{
 		return NULL;
 	}
@@ -88,6 +88,11 @@ static int encconv_sjis_win_to_utf8(unsigned char *p, unsigned char *end, JCStri
 	int count=0;
 
 	if(info->header.exit == 1)
+	{
+		return 0;
+	}
+
+	if(string_charsize(p, end, mode) == 0)
 	{
 		return 0;
 	}

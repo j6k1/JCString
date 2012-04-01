@@ -30,7 +30,7 @@ static int string_charsize(unsigned char *p, unsigned char *end, int mode)
 }
 static char *string_each(unsigned char *p, unsigned char *end, int *mode)
 {
-	if( ((end != NULL) && (p >= end)) || ((end == NULL) && (isend_string(p) == JCSTRING_TRUE)) )
+	if( ((end != NULL) && ((p + string_charsize(p, end, *mode)) > end)) || ((end == NULL) && (isend_string(p) == JCSTRING_TRUE)) )
 	{
 		return NULL;
 	}
@@ -71,7 +71,12 @@ static int encconv_sjis_win_to_utf8(unsigned char *p, unsigned char *end, JCStri
 		return 0;
 	}
 
-	if( ((*p >= 0x00 && *p <= 0x5B) || (*p >= 0x5D && *p <= 0x7D)) || (string_charsize(p, end, mode) == 0) )
+	if(string_charsize(p, end, mode) == 0)
+	{
+		return 0;
+	}
+
+	if( ((*p >= 0x00 && *p <= 0x5B) || (*p >= 0x5D && *p <= 0x7D)) || (*p == 0x7F) || (string_charsize(p, end, mode) == 0) )
 	{
 		count = 1;
 
@@ -164,6 +169,11 @@ static int encconv_sjis_to_jis(unsigned char *p, unsigned char *end, JCString_ex
 	memset(buff, 0x00, sizeof(buff));
 
 	if(info->header.exit == 1)
+	{
+		return 0;
+	}
+
+	if(string_charsize(p, end, mode) == 0)
 	{
 		return 0;
 	}
@@ -277,7 +287,8 @@ JCString_String JCString_SjisWinToUTF8(JCString_String str, JCSTRING_ERR *err)
 JCString_String JCString_SjisToJIS(JCString_String str, JCSTRING_ERR *err)
 {
 	return JCString_ConvEncodingCommon(str, string_each, encconv_sjis_to_jis, isend_string, err);
-}JCString_Each JCString_Get_SJISEach()
+}
+JCString_Each JCString_Get_SJISEach()
 {
 	return string_each;
 }

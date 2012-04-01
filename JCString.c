@@ -619,6 +619,9 @@ JCString_Each JCString_Get_Each(JCSTRING_ENCODING encoding)
 			{
 				return JCString_Get_Each(internal_encoding);
 			}
+		case JCSTRING_ENC_JIS:
+			return JCString_Get_JISEach();
+			break;
 		case JCSTRING_ENC_SJIS:
 		case JCSTRING_ENC_SJISWIN:
 			return JCString_Get_SJISEach();

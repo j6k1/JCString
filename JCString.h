@@ -30,7 +30,12 @@ typedef enum {
 	JCSTRING_CHAR_ROMAN,
 	JCSTRING_CHAR_KANA,
 	JCSTRING_CHAR_KANJIOLD,
-	JCSTRING_CHAR_KANJINEW
+	JCSTRING_CHAR_KANJINEW,
+	JCSTRING_CHAR_KANJI_JIS_X_0208_1990,
+	JCSTRING_CHAR_KANJI_JIS_X_0212_1990,
+	JCSTRING_CHAR_KANJI_JIS_X_0213_2000_1,
+	JCSTRING_CHAR_KANJI_JIS_X_0213_2004_1,
+	JCSTRING_CHAR_KANJI_JIS_X_0213_2000_2
 } JCSTRING_CHAR_MODE;
 typedef struct _JCString_allocated_memory_list JCString_allocated_memory_list;
 
@@ -122,6 +127,7 @@ JCString_IsEnd_String JCString_Get_SJISIsEndString();
 
 JCString_Each JCString_Get_SJISEach();
 JCString_Each JCString_Get_UTF8Each();
+JCString_Each JCString_Get_JISEach();
 JCString_Each JCString_Get_Each(JCSTRING_ENCODING encoding);
 
 JCString_IsEnd_String JCString_Get_UTF8IsEndString();
