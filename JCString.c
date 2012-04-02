@@ -721,6 +721,12 @@ JCString_String JCString_ConvEncodingCommon(JCString_String str,
 
 	do
 	{
+		if( ((end != NULL) && (p > end)) || 
+			((end == NULL) && (memcmp((const char *)p, (const char *)endmark.value, endmark.length) == 0) == JCSTRING_TRUE) )
+		{
+			break;
+		}
+
 		info.data.convert_data.count += convfunc(p, end, &info, mode);
 
 		if(info.header.exit == 1)

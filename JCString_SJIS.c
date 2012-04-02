@@ -30,7 +30,7 @@ static int string_charsize(unsigned char *p, unsigned char *end, int mode)
 }
 static char *string_each(unsigned char *p, unsigned char *end, int *mode)
 {
-	if( ((end != NULL) && ((p + string_charsize(p, end, *mode)) > end)) || ((end == NULL) && (isend_string(p) == JCSTRING_TRUE)) )
+	if( ((end != NULL) && (p > end)) || ((end == NULL) && (isend_string(p) == JCSTRING_TRUE)) )
 	{
 		return NULL;
 	}
