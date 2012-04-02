@@ -653,6 +653,12 @@ JCString_String JCString_CreateString(char *p, JCSTRING_ENCODING encoding, JCSTR
 	
 	string_each_func = JCString_Get_Each(encoding);
 
+	if(string_each_func == NULL)
+	{
+		*err = JCSTRING_ERR_SYSTEMERR;
+		return str;
+	}
+
 	str.use_length = JCSTRING_TRUE;
 	str.length = JCString_StrByteLen((const char *)p, string_each_func);
 	str.value = p;
@@ -660,7 +666,7 @@ JCString_String JCString_CreateString(char *p, JCSTRING_ENCODING encoding, JCSTR
 	return str;
 }
 JCString_String JCString_ConvEncodingCommon(JCString_String str, 
-	JCString_Each string_each_func, JCString_ConvertEncode convfunc, JCString_IsEnd_String isstrend_func, JCSTRING_ERR *err)
+	JCString_Each string_each_func, JCString_ConvertEncode convfunc, JCString_IsEnd_String isstrend_func, JCString_String endmark, JCSTRING_ERR *err)
 {
 	int len = 0;
 	int mode = JCSTRING_CHAR_DEFAULT;
@@ -724,7 +730,8 @@ JCString_String JCString_ConvEncodingCommon(JCString_String str,
 		}
 	}while((p = (unsigned char*)string_each_func(p, end, &mode)) != NULL);
 
-	info.data.convert_data.buff[info.data.convert_data.count] = '\0';
+	memmove(&(info.data.convert_data.buff[info.data.convert_data.count]), endmark.value, endmark.length);
+
 	result.length = info.data.convert_data.count;
 	result.value = (char *)info.data.convert_data.buff;
 
@@ -825,7 +832,9 @@ JCString_String JCString_CreateStringFromFile(FILE *fp, JCSTRING_ENCODING encodi
 {
 	char * buff;
 	JCString_String str;
+	JCString_String endmark;
 	size_t size = 0;
+	memset(&str, 0x00, sizeof(str));
 
 	fseek( fp, 0, SEEK_END );
 	size = ftell( fp );
@@ -834,9 +843,48 @@ JCString_String JCString_CreateStringFromFile(FILE *fp, JCSTRING_ENCODING encodi
 	rewind(fp);
 	fread(buff, sizeof(char), size, fp);
 	fclose(fp);
-	buff[size] = '\0';
-	buff[size+1] = '\0';
+
+	endmark = JCString_Get_StringEndMark(encoding, err);
+
+	if(*err != JCSTRING_ERR_NONE)
+	{
+		return str;
+	}
+
+	memmove(&(buff[size]), endmark.value, endmark.length);
 
 	return JCString_CreateString(buff, encoding, err);
 }
+JCString_String JCString_Get_StringEndMark(JCSTRING_ENCODING encoding, JCSTRING_ERR *err)
+{
+	JCString_String str;
+	static char strvalue[JCSTRING_MAX_ENDSTRING_MARK_LEN];
+	static const char single_null[] = {0x00};
+	static const char double_null[] = {0x00, 0x00};
 
+	memset(strvalue, 0x00, JCSTRING_MAX_ENDSTRING_MARK_LEN);
+	memset(&str, 0x00, sizeof(str));
+	str.value = strvalue;
+
+	if(JCString_IsDefinedEncType(encoding) == JCSTRING_FALSE)
+	{
+		*err = JCSTRING_ERR_PRMERR;
+		return str;
+	}
+
+	if(encoding == JCSTRING_ENC_INTERNAL)
+	{
+		encoding = internal_encoding;
+	}	
+
+	str.use_length = JCSTRING_TRUE;
+
+	switch(encoding)
+	{
+		default:
+			memmove(str.value, single_null, sizeof(single_null));
+			str.length = sizeof(single_null);
+	}
+
+	return str;
+}

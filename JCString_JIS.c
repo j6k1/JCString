@@ -11,6 +11,7 @@ static int changemode(unsigned char *p, unsigned char *end, int mode);
 static char *string_each(unsigned char *p, unsigned char *end, int *mode);
 static JCSTRING_BOOL isend_string(unsigned char *p);
 static int encconv_jis_to_sjis(unsigned char *p, unsigned char *end, JCString_exec_info *info, int mode);
+static int encconv_jis_to_euc(unsigned char *p, unsigned char *end, JCString_exec_info *info, int mode);
 
 static int string_charsize(unsigned char *p, unsigned char *end, int mode)
 {
@@ -38,6 +39,10 @@ static int string_charsize(unsigned char *p, unsigned char *end, int mode)
 			return 0;
 		}
 		else if(*p >= 0x20 && *p <= 0x7E)
+		{
+			return 1;
+		}
+		else
 		{
 			return 1;
 		}
@@ -403,6 +408,15 @@ static int encconv_jis_to_sjis(unsigned char *p, unsigned char *end, JCString_ex
 		if (c1 >= 0xa0) { c1 = c1 + 0x40; }
 		if (c2 >= 0x7f) { c2 = c2 + 1; }
 	}
+	else if( ((mode == JCSTRING_CHAR_KANJI_JIS_X_0212_1990) || (mode == JCSTRING_CHAR_KANJI_JIS_X_0213_2000_1) || 
+		(mode == JCSTRING_CHAR_KANJI_JIS_X_0213_2004_1) || (mode == JCSTRING_CHAR_KANJI_JIS_X_0213_2004_1) ||
+		(mode == JCSTRING_CHAR_KANJI_JIS_X_0213_2000_2)) &&
+		((end == NULL) || ((end != NULL) && ((p+1) <= end))) && ((*p >= 0x21 && *p <= 0x7E) && (*(p+1) >= 0x21 && *(p+1) <= 0x7E) ) )
+	{
+		count = 2;
+		c1 = 0x81;
+		c2 = 0xAC;
+	}
 	else
 	{
 		return 0;
@@ -424,9 +438,116 @@ static int encconv_jis_to_sjis(unsigned char *p, unsigned char *end, JCString_ex
 
 	return count;
 }
+static int encconv_jis_to_eucjp(unsigned char *p, unsigned char *end, JCString_exec_info *info, int mode)
+{
+	int count=0;
+	unsigned char buff[3];
+	memset(buff, 0x00, sizeof(buff));
+
+	if(info->header.exit == 1)
+	{
+		return 0;
+	}
+
+	if(isescape_sequence(p, end) == JCSTRING_TRUE)
+	{
+		return 0;
+	}
+
+	if( ((mode == JCSTRING_CHAR_DEFAULT) || (mode == JCSTRING_CHAR_ASCII) || (mode == JCSTRING_CHAR_ROMAN))
+		&& (!(*p >= 0x00 && *p <= 0x7F)) )
+	{
+		return 0;
+	}
+	else if( (mode == JCSTRING_CHAR_KANA) && (!(*p >= 0x21 && *p <= 0x5F)) )
+	{
+		return 0;
+	}
+
+	if((mode == JCSTRING_CHAR_DEFAULT) || (mode == JCSTRING_CHAR_ASCII) || (mode == JCSTRING_CHAR_ROMAN))
+	{
+		count = 1;
+
+		if((info->data.convert_data.count + count) > info->data.convert_data.size)
+		{
+			if(JCString_Realloc((void **)(&info->data.convert_data.buff), info->data.convert_data.size * 2, __FILE__, __LINE__ ) != JCSTRING_SUCCESS)
+			{
+				info->header.exit = 1;
+				info->header.err = JCSTRING_ERR_BAD_ALLOC;
+				return 0;
+			}
+			info->data.convert_data.size = info->data.convert_data.size * 2;
+		}
+
+		info->data.convert_data.buff[info->data.convert_data.count] = *p;
+		return count;
+	}
+	else if(mode == JCSTRING_CHAR_KANA)
+	{
+		count = 2;
+
+		buff[0] = 0x8E;
+		buff[1] = *p;
+	}
+	else if( ((mode == JCSTRING_CHAR_KANJIOLD) || (mode == JCSTRING_CHAR_KANJINEW) || (mode == JCSTRING_CHAR_KANJI_JIS_X_0208_1990)) &&
+		((end == NULL) || ((end != NULL) && ((p+1) <= end))) && ((*p >= 0x21 && *p <= 0x7E) && (*(p+1) >= 0x21 && *(p+1) <= 0x7E) ) )
+	{
+		count = 2;
+
+		buff[0] = *p | 0x80;
+		buff[1] = *(p+1) | 0x80;
+	}
+	else if( (mode == JCSTRING_CHAR_KANJI_JIS_X_0212_1990) &&
+		((end == NULL) || ((end != NULL) && ((p+1) <= end))) && ((*p >= 0x21 && *p <= 0x7E) && (*(p+1) >= 0x21 && *(p+1) <= 0x7E) ) )
+	{
+		count = 3;
+		buff[0] = 0x8F;
+		buff[1] = *p | 0x80;
+		buff[2] = *(p+1) | 0x80;
+	}
+	else
+	{
+		return 0;
+	}
+
+	if((info->data.convert_data.count + count) > info->data.convert_data.size)
+	{
+		if(JCString_Realloc((void **)(&info->data.convert_data.buff), info->data.convert_data.size * 2, __FILE__, __LINE__ ) != JCSTRING_SUCCESS)
+		{
+			info->header.exit = 1;
+			info->header.err = JCSTRING_ERR_BAD_ALLOC;
+			return 0;
+		}
+		info->data.convert_data.size = info->data.convert_data.size * 2;
+	}
+
+	memmove(&(info->data.convert_data.buff[info->data.convert_data.count]), buff, count);
+
+	return count;
+}
 JCString_String JCString_JISToSJIS(JCString_String str, JCSTRING_ERR *err)
 {
-	return JCString_ConvEncodingCommon(str, string_each, encconv_jis_to_sjis, isend_string, err);
+	JCString_String endmark;
+	endmark = JCString_Get_StringEndMark(JCSTRING_ENC_SJIS, err);
+
+	if(*err != JCSTRING_ERR_NONE)
+	{
+		return str;
+	}
+
+	return JCString_ConvEncodingCommon(str, string_each, encconv_jis_to_sjis, isend_string, endmark, err);
+}
+JCString_String JCString_JISToEUCJP(JCString_String str, JCSTRING_ERR *err)
+{
+	JCString_String endmark;
+	endmark = JCString_Get_StringEndMark(JCSTRING_ENC_EUCJP, err);
+
+	if(*err != JCSTRING_ERR_NONE)
+	{
+		return str;
+	}
+
+	return JCString_ConvEncodingCommon(str, string_each, encconv_jis_to_eucjp, isend_string, endmark, err);
 }
 JCString_Each JCString_Get_JISEach()
 {

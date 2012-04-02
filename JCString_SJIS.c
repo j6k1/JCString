@@ -282,11 +282,27 @@ static JCSTRING_BOOL isend_string(unsigned char *p)
 }
 JCString_String JCString_SjisWinToUTF8(JCString_String str, JCSTRING_ERR *err)
 {
-	return JCString_ConvEncodingCommon(str, string_each, encconv_sjis_win_to_utf8, isend_string, err);
+	JCString_String endmark;
+	endmark = JCString_Get_StringEndMark(JCSTRING_ENC_UTF8, err);
+
+	if(*err != JCSTRING_ERR_NONE)
+	{
+		return str;
+	}
+
+	return JCString_ConvEncodingCommon(str, string_each, encconv_sjis_win_to_utf8, isend_string, endmark, err);
 }
 JCString_String JCString_SjisToJIS(JCString_String str, JCSTRING_ERR *err)
 {
-	return JCString_ConvEncodingCommon(str, string_each, encconv_sjis_to_jis, isend_string, err);
+	JCString_String endmark;
+	endmark = JCString_Get_StringEndMark(JCSTRING_ENC_JIS, err);
+
+	if(*err != JCSTRING_ERR_NONE)
+	{
+		return str;
+	}
+
+	return JCString_ConvEncodingCommon(str, string_each, encconv_sjis_to_jis, isend_string, endmark, err);
 }
 JCString_Each JCString_Get_SJISEach()
 {

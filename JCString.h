@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define JCSTRING_MAX_ENDSTRING_MARK_LEN 2
+
 enum {
 	MEMADDR_HASH_SIZE = 10000
 };
@@ -15,6 +17,7 @@ typedef enum {
 	JCSTRING_ENC_SJIS,
 	JCSTRING_ENC_SJISWIN,
 	JCSTRING_ENC_UTF8,
+	JCSTRING_ENC_EUCJP,
 	JCSTRING_ENC_END
 } JCSTRING_ENCODING;
 typedef enum {
@@ -115,14 +118,16 @@ JCSTRING_BOOL JCString_IsDefinedEncType(int encoding);
 JCString_String JCString_CreateString(char *p, JCSTRING_ENCODING encoding, JCSTRING_ERR *err);
 
 JCString_String JCString_ConvEncodingCommon(JCString_String str, 
-	JCString_Each string_each_func, JCString_ConvertEncode convfunc, JCString_IsEnd_String isstrend_func, JCSTRING_ERR *err);
+	JCString_Each string_each_func, JCString_ConvertEncode convfunc, JCString_IsEnd_String isstrend_func, JCString_String endmark, JCSTRING_ERR *err);
 JCString_String JCString_SjisWinToUTF8(JCString_String str, JCSTRING_ERR *err);
 JCString_String JCString_SjisToJIS(JCString_String str, JCSTRING_ERR *err);
 JCString_String JCString_UTF8ToSJISWin(JCString_String str, JCSTRING_ERR *err);
 JCString_String JCString_JISToSJIS(JCString_String str, JCSTRING_ERR *err);
+JCString_String JCString_JISToEUCJP(JCString_String str, JCSTRING_ERR *err);
 JCString_String JCString_ToSJISWin(JCString_String str, JCSTRING_ENCODING encoding, JCSTRING_ERR *err);
 JCString_String JCString_ToUTF8(JCString_String str, JCSTRING_ENCODING encoding, JCSTRING_ERR *err);
 JCString_String JCString_ToJIS(JCString_String str, JCSTRING_ENCODING encoding, JCSTRING_ERR *err);
+
 JCString_IsEnd_String JCString_Get_SJISIsEndString();
 
 JCString_Each JCString_Get_SJISEach();
@@ -132,6 +137,7 @@ JCString_Each JCString_Get_Each(JCSTRING_ENCODING encoding);
 
 JCString_IsEnd_String JCString_Get_UTF8IsEndString();
 JCString_String JCString_CreateStringFromFile(FILE *fp, JCSTRING_ENCODING encoding, JCSTRING_ERR *err);
+JCString_String JCString_Get_StringEndMark(JCSTRING_ENCODING encoding, JCSTRING_ERR *err);
 
 #define __JCSTRING_H__
 #endif
