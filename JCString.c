@@ -2,7 +2,7 @@
  * JCString
  *
  * @package JCString - multibyte-string-library
- * @version 0.0.2-alpha
+ * @version 0.0.3-alpha
  * @author jinpu <http://will-co21.net>
  * @lisence The LGPL License
  * @copyright Copyright 2012 jinpu. All rights reserved.
