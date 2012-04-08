@@ -636,6 +636,8 @@ JCString_Each JCString_Get_Each(JCSTRING_ENCODING encoding)
 JCString_String JCString_CreateString(char *p, JCSTRING_ENCODING encoding, JCSTRING_ERR *err)
 {
 	JCString_String str;
+	JCString_String endmark;
+
 	JCString_Each string_each_func = NULL;
 
 	memset(&str, 0x00, sizeof(str));
@@ -651,6 +653,13 @@ JCString_String JCString_CreateString(char *p, JCSTRING_ENCODING encoding, JCSTR
 		encoding = internal_encoding;
 	}	
 	
+	endmark = JCString_Get_StringEndMark(encoding, err);
+
+	if(*err != JCSTRING_ERR_NONE)
+	{
+		return str;
+	}
+
 	string_each_func = JCString_Get_Each(encoding);
 
 	if(string_each_func == NULL)
@@ -661,7 +670,9 @@ JCString_String JCString_CreateString(char *p, JCSTRING_ENCODING encoding, JCSTR
 
 	str.use_length = JCSTRING_TRUE;
 	str.length = JCString_StrByteLen((const char *)p, string_each_func);
-	str.value = p;
+	str.value = (char *)JCString_Malloc(str.length + endmark.length, __FILE__, __LINE__ );
+	memmove(str.value, p, str.length);
+	memmove(&(str.value[str.length]), endmark.value, endmark.length);
 
 	return str;
 }
@@ -735,6 +746,16 @@ JCString_String JCString_ConvEncodingCommon(JCString_String str,
 			return result;
 		}
 	}while((p = (unsigned char*)string_each_func(p, end, &mode)) != NULL);
+
+	if((info.data.convert_data.count + (int)endmark.length) > info.data.convert_data.size)
+	{
+		if(JCString_Realloc((void **)(&info.data.convert_data.buff), info.data.convert_data.size + endmark.length, __FILE__, __LINE__ ) != JCSTRING_SUCCESS)
+		{
+			*err = JCSTRING_ERR_BAD_ALLOC;
+			return result;
+		}
+		info.data.convert_data.size = info.data.convert_data.size + endmark.length;
+	}
 
 	memmove(&(info.data.convert_data.buff[info.data.convert_data.count]), endmark.value, endmark.length);
 
@@ -842,14 +863,6 @@ JCString_String JCString_CreateStringFromFile(FILE *fp, JCSTRING_ENCODING encodi
 	size_t size = 0;
 	memset(&str, 0x00, sizeof(str));
 
-	fseek( fp, 0, SEEK_END );
-	size = ftell( fp );
-
-	buff = (char *)JCString_Malloc(size + 2, __FILE__, __LINE__ );
-	rewind(fp);
-	fread(buff, sizeof(char), size, fp);
-	fclose(fp);
-
 	endmark = JCString_Get_StringEndMark(encoding, err);
 
 	if(*err != JCSTRING_ERR_NONE)
@@ -857,20 +870,28 @@ JCString_String JCString_CreateStringFromFile(FILE *fp, JCSTRING_ENCODING encodi
 		return str;
 	}
 
-	memmove(&(buff[size]), endmark.value, endmark.length);
+	fseek( fp, 0, SEEK_END );
+	size = ftell( fp );
+	
+	buff = (char *)JCString_Malloc(size + endmark.length, __FILE__, __LINE__ );
+	rewind(fp);
+	fread(buff, sizeof(char), size, fp);
+	fclose(fp);
 
-	return JCString_CreateString(buff, encoding, err);
+	memmove(&(buff[size]), endmark.value, endmark.length);
+	str.value = buff;
+	str.use_length = JCSTRING_TRUE;
+	str.length = size;
+
+	return str;
 }
-JCString_String JCString_Get_StringEndMark(JCSTRING_ENCODING encoding, JCSTRING_ERR *err)
+const JCString_String JCString_Get_StringEndMark(JCSTRING_ENCODING encoding, JCSTRING_ERR *err)
 {
 	JCString_String str;
-	static char strvalue[JCSTRING_MAX_ENDSTRING_MARK_LEN];
 	static const char single_null[] = {0x00};
 	static const char double_null[] = {0x00, 0x00};
 
-	memset(strvalue, 0x00, JCSTRING_MAX_ENDSTRING_MARK_LEN);
 	memset(&str, 0x00, sizeof(str));
-	str.value = strvalue;
 
 	if(JCString_IsDefinedEncType(encoding) == JCSTRING_FALSE)
 	{
@@ -888,7 +909,7 @@ JCString_String JCString_Get_StringEndMark(JCSTRING_ENCODING encoding, JCSTRING_
 	switch(encoding)
 	{
 		default:
-			memmove(str.value, single_null, sizeof(single_null));
+			str.value = (char *)single_null;
 			str.length = sizeof(single_null);
 	}
 

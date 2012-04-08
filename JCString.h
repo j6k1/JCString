@@ -137,7 +137,7 @@ JCString_Each JCString_Get_Each(JCSTRING_ENCODING encoding);
 
 JCString_IsEnd_String JCString_Get_UTF8IsEndString();
 JCString_String JCString_CreateStringFromFile(FILE *fp, JCSTRING_ENCODING encoding, JCSTRING_ERR *err);
-JCString_String JCString_Get_StringEndMark(JCSTRING_ENCODING encoding, JCSTRING_ERR *err);
+const JCString_String JCString_Get_StringEndMark(JCSTRING_ENCODING encoding, JCSTRING_ERR *err);
 
 #define __JCSTRING_H__
 #endif
